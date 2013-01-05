@@ -49,6 +49,7 @@ namespace FF4Bot
         private static Rectangle _bounds;
         private static IntPtr _activeWindowHandle;
         private static Bitmap _bitmap;
+        private static readonly Object LockObject = new object();
 
         #region ColorCoord Maps
 
@@ -275,7 +276,10 @@ namespace FF4Bot
 
         private static void TimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
         {
-            MainLoop();
+            lock (LockObject)
+            {
+                MainLoop();
+            }
         }
 
         private static void MainLoop()
@@ -309,10 +313,12 @@ namespace FF4Bot
             {
                 if (_lastKnownHPChar3 < 300)
                 {
-                    while (!InMenuMagicSelected())
+                    if (!InMenuMagicSelected())
                     {
                         DirectionDown();
+                        return;
                     }
+
                     PressA();
                     return;
                 }
