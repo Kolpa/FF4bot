@@ -17,7 +17,7 @@ namespace FF4Bot
     {   
         private const string EmulatorProcessName = "vba-v24m-svn461";
 
-        private static readonly string EmulatorFolder = SystemInformation.ComputerName == "Psycho" ? @"D:\Spiele\Emulatoren\Emus\GB+C+A" : "C:\\Users\\Kolpa\\Desktop\\vba";
+        private static readonly string EmulatorFolder = SystemInformation.ComputerName == "Psycho" ? @"D:\Spiele\Emulatoren\Emus\GB+C+A" : SystemInformation.ComputerName == "Kolpa" ? "C:\\Users\\Kolpa\\Desktop\\vba" : Path.GetDirectoryName(Application.StartupPath);
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -99,7 +99,7 @@ namespace FF4Bot
             Timer.AutoReset = true;
             Timer.Elapsed += TimerOnElapsed;
             Timer.Start();
-
+            
             foreach(var i in GetConfig())
             {
                 Console.WriteLine("{0}, {1}", i.Key, i.Value);
