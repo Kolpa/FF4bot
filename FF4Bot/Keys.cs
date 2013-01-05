@@ -8,7 +8,7 @@ namespace FF4Bot
 {
     class Keys
     {
-       public static readonly Dictionary<Int32, VirtualKeyCode> vb2vk()
+       public static Dictionary<Int32, VirtualKeyCode> vb2vk()
        {
            Dictionary<Int32, VirtualKeyCode> tmp = new Dictionary<int, VirtualKeyCode>();
            tmp.Add(16, VirtualKeyCode.VK_Q);

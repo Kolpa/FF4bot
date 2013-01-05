@@ -19,6 +19,16 @@ namespace FF4Bot
 
         private static readonly string EmulatorFolder = SystemInformation.ComputerName == "PSYCHO" ? @"D:\Spiele\Emulatoren\Emus\GB+C+A" : SystemInformation.ComputerName == "KOLPA" ? "C:\\Users\\Kolpa\\Desktop\\vba" : Path.GetDirectoryName(Application.StartupPath);
 
+        private static VirtualKeyCode Kup;
+        private static VirtualKeyCode Kdown;
+        private static VirtualKeyCode Kleft;
+        private static VirtualKeyCode Kright;
+        private static VirtualKeyCode Ka;
+        private static VirtualKeyCode Kb;
+        private static VirtualKeyCode Ksel;
+        private static VirtualKeyCode Ksta;
+        private static VirtualKeyCode Kspeed;
+
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
 
@@ -223,18 +233,42 @@ namespace FF4Bot
 
         static void Main()
         {
+            Dictionary<Int32, VirtualKeyCode> keys = Keys.vb2vk();
+            Dictionary<String, String> config = GetConfig();
+
+            getCodes(keys, config);
+
             Timer.AutoReset = true;
             Timer.Elapsed += TimerOnElapsed;
             Timer.Start();
 
-            foreach (var i in GetConfig())
-            {
-                Console.WriteLine("{0}, {1}", i.Key, i.Value);
-            }
-
             while (Timer.Enabled)
             {
             }
+        }
+
+        private static void getCodes(Dictionary<Int32, VirtualKeyCode> keys, Dictionary<String, String> config)
+        {
+            Int32 tup = Convert.ToInt32(config["Joy0_Up"]);
+            Int32 tdown = Convert.ToInt32(config["Joy0_Down"]);
+            Int32 tleft = Convert.ToInt32(config["Joy0_Left"]);
+            Int32 tright = Convert.ToInt32(config["Joy0_Right"]);
+            Int32 ta = Convert.ToInt32(config["Joy0_A"]);
+            Int32 tb = Convert.ToInt32(config["Joy0_B"]);
+            Int32 tsel = Convert.ToInt32(config["Joy0_Select"]);
+            Int32 tsta = Convert.ToInt32(config["Joy0_Start"]);
+            Int32 tspeed = Convert.ToInt32(config["Joy0_Speed"]);
+
+            Kup = keys[tup];
+            Kdown = keys[tdown];
+            Kleft = keys[tleft];
+            Kright = keys[tright];
+            Ka = keys[ta];
+            Kb = keys[tb];
+            Ksel = keys[tsel];
+            Ksta = keys[tsta];
+            Kspeed = keys[tspeed];
+
         }
 
         private static void TimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
