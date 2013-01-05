@@ -233,7 +233,7 @@ namespace FF4Bot
 
         static void Main()
         {
-            Dictionary<Int32, VirtualKeyCode> keys = Keys.vb2vk();
+            Dictionary<Int32, VirtualKeyCode> keys = FF4Bot.Keys.vb2vk();
             Dictionary<String, String> config = GetConfig();
 
             getCodes(keys, config);
