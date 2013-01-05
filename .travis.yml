@@ -1,7 +1,7 @@
 env:
   global:
-    - secure: "d71e+0ajWJGjNX5OjRaOCvv2lD32aVNzfpVqiivuSEBgoVO3Vg84KFeK3GiD\nyrXwxf7g0n4XS105jLZutOWUQp9sQno+COtc2m7WZLP9DDknvrhropB9Y6Au\n39I4AnbodXyjlImNKv04Qyq9OBotDNA/QRfYJPw/ILNWxqqAw2o="
-    - secure: "Tl9PklwNXWesjSbsoUI3XYOQQj3OQyWophXkFRoV6jp7CyKLOjlWXTRHFYAb\nI1v+3JjSDvyDTKMX6/Fj5Y+pQuRQvJJpzO1i079im/w9hCoYkk0lQ1qK0ntV\nd8vdmNN/9clde68kwf+0P29npYaG09eER8RDG31wfFC63c46Czw="
+    - secure: "jlUK0NJDjDZKfjtZ4F0RGIaUDqlzlxtKz5G1urbiVoJpo9n0CM99DYHVHKRl\nLx5JP70sPwPd4JIVJ3jaP9Ro5dQZTKrxtKRuAP+l5L45dynMPYIIWJJT4RGN\nm0mQmMPY7p4D4EDsJtbyJtHnakRO9oSCd/Z0/1Pt0hAfZ46yzRs="
+    - secure: "e+Fm2tlI35Y3um7tsdhqwRT4AtSXDNseVSehYUeWulJbk672oRIcE7/znXsv\nWwGEi6gDCFrfo7vWKTHOKd+EI6MiNN9TPQ6I0dQX/nQg0hevFUMfgPKz7AFu\nbtk6pMrzwlaBc1YMmQkB7d/QUREjXrxjxxfpX8BpfUg9pccLC4c="
 install:
   - sudo apt-get install mono-devel mono-gmcs
 script:
