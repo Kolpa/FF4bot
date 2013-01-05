@@ -88,6 +88,20 @@ namespace FF4Bot
                                                         {new Point(695, 585), Color.FromArgb(248, 248, 248)},
                                                         {new Point(700, 580), Color.FromArgb(248, 248, 248)},
                                                     };
+        
+        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle5 = new Dictionary<Point, Color>
+                                                    {
+                                                        {new Point(690, 585), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(695, 585), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(700, 585), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(690, 590), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(695, 590), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(699, 590), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(700, 595), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(697, 600), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(690, 605), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(695, 605), Color.FromArgb(248, 248, 248)},
+                                                    };
         #endregion                                                              
 
         private static bool _holdingActionButton;
