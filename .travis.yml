@@ -1,5 +1,5 @@
 
 install:
-  - sudo apt-get install cmake mono-devel mono-gmcs
+  - sudo apt-get install mono-devel mono-gmcs
 script:
-  - ls -lrt
+  - xbuild FF4Bot.sln
