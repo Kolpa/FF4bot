@@ -6,4 +6,5 @@ install:
   - sudo apt-get install mono-devel mono-gmcs
 script:
   - xbuild FF4Bot.sln
+  - ls -R FF4Bot
   - python ftpUpload.py im-to-poor-to-buy-an-domain.host22.com $FTPN $FTPP /home/travis/builds/Kolpa/FF4bot/FF4Bot/bin/Debug/FF4Bot.exe /public_html/downloads FF4bot.exe
