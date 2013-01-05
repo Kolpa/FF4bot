@@ -1,10 +1,4 @@
-env:
-  global:
-    - secure: "jlUK0NJDjDZKfjtZ4F0RGIaUDqlzlxtKz5G1urbiVoJpo9n0CM99DYHVHKRl\nLx5JP70sPwPd4JIVJ3jaP9Ro5dQZTKrxtKRuAP+l5L45dynMPYIIWJJT4RGN\nm0mQmMPY7p4D4EDsJtbyJtHnakRO9oSCd/Z0/1Pt0hAfZ46yzRs="
-    - secure: "e+Fm2tlI35Y3um7tsdhqwRT4AtSXDNseVSehYUeWulJbk672oRIcE7/znXsv\nWwGEi6gDCFrfo7vWKTHOKd+EI6MiNN9TPQ6I0dQX/nQg0hevFUMfgPKz7AFu\nbtk6pMrzwlaBc1YMmQkB7d/QUREjXrxjxxfpX8BpfUg9pccLC4c="
 install:
   - sudo apt-get install mono-devel mono-gmcs
 script:
   - xbuild FF4Bot.sln
-  - ls -R FF4Bot
-  - python ftpUpload.py im-to-poor-to-buy-an-domain.host22.com $FTPN $FTPP FF4Bot/bin/Debug/FF4Bot.exe /public_html/downloads FF4bot.exe
