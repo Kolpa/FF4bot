@@ -14,7 +14,7 @@ namespace FF4Bot
 {
     class Program
     {
-        private string test = "test";
+        private string test = "NEIN NEIN NEIN NEIN";
         
         private const string EmulatorProcessName = "vba-v24m-svn461";
 
