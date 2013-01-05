@@ -13,9 +13,7 @@ using System.IO;
 namespace FF4Bot
 {
     class Program
-    {
-        private string test = "konfliktprovokation!";
-        
+    {   
         private const string EmulatorProcessName = "vba-v24m-svn461";
 
         //private const string EmulatorFolder = "C:\\Users\\Kolpa\\Desktop\\vba";
@@ -226,16 +224,6 @@ namespace FF4Bot
         private static void WalkWest()
         {
             LongPressKey(VirtualKeyCode.VK_H);
-        }
-
-        private static void OpenMainMenu()
-        {
-            LongPressKey(VirtualKeyCode.VK_B);
-        }
-
-        private static void Back()
-        {
-            LongPressKey(VirtualKeyCode.VK_X);
         }
 
         private static void LongPressKey(VirtualKeyCode code)
