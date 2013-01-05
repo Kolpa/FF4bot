@@ -236,6 +236,7 @@ namespace FF4Bot
         #endregion
 
         private static int _lastKnownHPChar3 = 900;
+        private const int HealThreshold = 300;
 
         private static void Main()
         {
@@ -303,7 +304,7 @@ namespace FF4Bot
 
             HoldTurboButton();
 
-            if (_lastKnownHPChar3 < 300 && (InWorldMapFacingEast() || InWorldMapFacingNorth() || InWorldMapFacingSouth() || InWorldMapFacingWest()))
+            if (_lastKnownHPChar3 < HealThreshold && (InWorldMapFacingEast() || InWorldMapFacingNorth() || InWorldMapFacingSouth() || InWorldMapFacingWest()))
             {
                 OpenMenu();
                 return;
@@ -311,7 +312,7 @@ namespace FF4Bot
 
             if (InMenu())
             {
-                if (_lastKnownHPChar3 < 300)
+                if (_lastKnownHPChar3 < HealThreshold)
                 {
                     if (!InMenuMagicSelected())
                     {
