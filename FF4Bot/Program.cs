@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Timers;
+using System.Windows.Forms;
 using Timer = System.Timers.Timer;
 using WindowsInput;
 using System.IO;
@@ -16,8 +17,7 @@ namespace FF4Bot
     {   
         private const string EmulatorProcessName = "vba-v24m-svn461";
 
-        //private const string EmulatorFolder = "C:\\Users\\Kolpa\\Desktop\\vba";
-        private const string EmulatorFolder = @"D:\Spiele\Emulatoren\Emus\GB+C+A";
+        private static readonly string EmulatorFolder = SystemInformation.ComputerName == "Psycho" ? @"D:\Spiele\Emulatoren\Emus\GB+C+A" : "C:\\Users\\Kolpa\\Desktop\\vba";
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -79,9 +79,20 @@ namespace FF4Bot
                                                         {new Point(900, 505), Color.FromArgb(200, 200, 200)},
                                                         {new Point(950, 505), Color.FromArgb(200, 200, 200)},
                                                     };
+
+        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle6 = new Dictionary<Point, Color>
+                                                    {
+                                                        {new Point(690, 590), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(695, 600), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(700, 590), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(695, 585), Color.FromArgb(248, 248, 248)},
+                                                        {new Point(700, 580), Color.FromArgb(248, 248, 248)},
+                                                    };
         #endregion                                                              
 
         private static bool _holdingActionButton;
+
+        private static int LastKnownHPChar3 = 999;
 
         static void Main()
         {   
