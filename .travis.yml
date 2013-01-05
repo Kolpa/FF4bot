@@ -3,7 +3,7 @@ env:
     - secure: "WpqfhUNMTQ5WvfkxY/wP31LC3smCyRPaGfr6BbwvYPVUtXq/q9D6QdjyUo/P\n43ztGjvRIRof/5VRjNmX6HU7RhxB9ukDn0oQxidH2dZgI4uJKN4jhohwwtHJ\nnpX84h1yBozRfjg9bqYuLCIkqyARr81pMuPdPlE34BTaJ8yWqh8="
     - secure: "LSbJJw0gmmw4ZjIf4Zy8VnwvOwCP0DbfKNa07ZbKJlVWHZVSnTW/Bt4ZKR3V\nQzps/iZ5AYGK+oS9nFgAg5i1ZAjMMUI5Oj1DTJqA9zFxWXRNOgKY216aBuSP\nGZLFDSnryCWzq4N4Ln+2MlwfP8Jc4zMZbsWNbJG4tyHqj3etCvs="
 install:
-  - sudo apt-get -qq install mono-gmcs
+  - sudo apt-get -qq install mono-xbuild mono-gmcs
 script:
   - xbuild /verbosity:quiet FF4Bot.sln
   - sudo apt-get -qq install python-setuptools
