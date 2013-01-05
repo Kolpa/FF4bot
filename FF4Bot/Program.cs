@@ -240,7 +240,9 @@ namespace FF4Bot
 
         private static void Main()
         {
-            Dictionary<Int32, VirtualKeyCode> keys = Keys.Vb2Vk();
+            // ReSharper disable RedundantNameQualifier Menschen verstehen es, VS versteht es, Travis versteht es nicht -_-
+            Dictionary<Int32, VirtualKeyCode> keys = FF4Bot.Keys.Vb2Vk();
+            // ReSharper restore RedundantNameQualifier
             Dictionary<String, String> config = GetConfig();
 
             GetCodes(keys, config);
