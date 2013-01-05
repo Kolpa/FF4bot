@@ -14,6 +14,8 @@ namespace FF4Bot
 {
     class Program
     {
+        private string test = "test";
+        
         private const string EmulatorProcessName = "vba-v24m-svn461";
 
         //private const string EmulatorFolder = "C:\\Users\\Kolpa\\Desktop\\vba";
