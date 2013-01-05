@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Timers;
-using System.Windows.Forms;
 using Timer = System.Timers.Timer;
 using WindowsInput;
 using System.IO;
@@ -17,7 +16,8 @@ namespace FF4Bot
     {
         private const string EmulatorProcessName = "vba-v24m-svn461";
 
-        private const string EmulatorFolder = "C:\\Users\\Kolpa\\Desktop\\vba";
+        //private const string EmulatorFolder = "C:\\Users\\Kolpa\\Desktop\\vba";
+        private const string EmulatorFolder = @"D:\Spiele\Emulatoren\Emus\GB+C+A";
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -28,7 +28,7 @@ namespace FF4Bot
         [DllImport("user32.dll")]
         private static extern bool GetWindowRect(IntPtr hWnd, out Rectangle rect);
 
-        private static readonly Timer Timer = new Timer(50);
+        private static readonly Timer Timer = new Timer(100);
         private static Rectangle _bounds;
         private static IntPtr _activeWindowHandle;
         private static Bitmap _bitmap;
@@ -89,7 +89,7 @@ namespace FF4Bot
             Timer.Elapsed += TimerOnElapsed;
             Timer.Start();
 
-            foreach(var i in getConfig())
+            foreach(var i in GetConfig())
             {
                 Console.WriteLine("{0}, {1}", i.Key, i.Value);
             }
@@ -141,21 +141,11 @@ namespace FF4Bot
             {
                 LongPressKey(VirtualKeyCode.VK_C);
             }
-                
-
-            
-            
         }
 
-        private static Dictionary<String, String> getConfig()
+        private static Dictionary<String, String> GetConfig()
         {
-            var tmp = new Dictionary<String, String>();
-            foreach (var row in File.ReadAllLines(EmulatorFolder + "\\vba.ini"))
-                if (row.Contains("="))
-                {
-                    tmp.Add(row.Split('=')[0], row.Split('=')[1]);
-                }
-            return tmp;
+            return File.ReadAllLines(EmulatorFolder + "\\vba.ini").Where(row => row.Contains("=")).ToDictionary(row => row.Split('=')[0], row => row.Split('=')[1]);
         }
 
         private static void TakeScreenshot()
