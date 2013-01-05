@@ -6,6 +6,6 @@ install:
   - sudo apt-get -qq install mono-devel mono-gmcs
 script:
   - sudo apt-get -qq install python-setuptools
-  - easy_install mechanize
+  - sudo easy_install mechanize
   - xbuild FF4Bot.sln
   - python upload.py $E $P
