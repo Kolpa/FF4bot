@@ -25,7 +25,6 @@ namespace FF4Bot
         private static VirtualKeyCode Kright;
         private static VirtualKeyCode Ka;
         private static VirtualKeyCode Kb;
-        private static VirtualKeyCode Ksel;
         private static VirtualKeyCode Ksta;
         private static VirtualKeyCode Kspeed;
 
