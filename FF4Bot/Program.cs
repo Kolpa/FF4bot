@@ -255,7 +255,6 @@ namespace FF4Bot
             Int32 tright = Convert.ToInt32(config["Joy0_Right"]);
             Int32 ta = Convert.ToInt32(config["Joy0_A"]);
             Int32 tb = Convert.ToInt32(config["Joy0_B"]);
-            Int32 tsel = Convert.ToInt32(config["Joy0_Select"]);
             Int32 tsta = Convert.ToInt32(config["Joy0_Start"]);
             Int32 tspeed = Convert.ToInt32(config["Joy0_Speed"]);
 
@@ -265,7 +264,6 @@ namespace FF4Bot
             Kright = keys[tright];
             Ka = keys[ta];
             Kb = keys[tb];
-            Ksel = keys[tsel];
             Ksta = keys[tsta];
             Kspeed = keys[tspeed];
 
