@@ -232,10 +232,10 @@ namespace FF4Bot
 
         static void Main()
         {
-            Dictionary<Int32, VirtualKeyCode> keys = FF4Bot.Keys.vb2vk();
+            Dictionary<Int32, VirtualKeyCode> keys = Keys.Vb2Vk();
             Dictionary<String, String> config = GetConfig();
 
-            getCodes(keys, config);
+            GetCodes(keys, config);
 
             Timer.AutoReset = true;
             Timer.Elapsed += TimerOnElapsed;
@@ -246,7 +246,7 @@ namespace FF4Bot
             }
         }
 
-        private static void getCodes(Dictionary<Int32, VirtualKeyCode> keys, Dictionary<String, String> config)
+        private static void GetCodes(IDictionary<int, VirtualKeyCode> keys, IDictionary<string, string> config)
         {
             Int32 tup = Convert.ToInt32(config["Joy0_Up"]);
             Int32 tdown = Convert.ToInt32(config["Joy0_Down"]);
