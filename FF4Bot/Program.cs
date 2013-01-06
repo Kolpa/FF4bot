@@ -43,6 +43,40 @@ namespace FF4Bot
         [DllImport("user32.dll")]
         private static extern bool GetWindowRect(IntPtr hWnd, out Rectangle rect);
 
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+        [DllImport("kernel32.dll")]
+        static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, ref uint lpNumberOfBytesWritten);
+
+        #endregion
+
+        #region Dll Wrapper
+
+        private static IntPtr Open(int id)
+        {
+            return OpenProcess(0x1F0FFF, true, id);
+        }
+
+        private static int Read(IntPtr Process, IntPtr Adress)
+        {
+            byte[] bytes = new byte[24];
+            uint rw = 0;
+            ReadProcessMemory(Process, Adress, bytes, (UIntPtr)sizeof(int), ref rw);
+            int result = BitConverter.ToInt32(bytes, 0);
+            return result;
+        }
+
+        private static IntPtr getAdress(IntPtr Process, IntPtr pointer, uint offset)
+        {
+            byte[] bytes = new byte[24];
+            uint rw = 0;
+            ReadProcessMemory(Process, pointer, bytes, (UIntPtr)sizeof(int), ref rw);
+            uint pt = BitConverter.ToUInt32(bytes, 0);
+            IntPtr var = (IntPtr)(pt + offset);
+            return var;
+        }
+
         #endregion
 
         private static readonly Timer Timer = new Timer(150);
@@ -245,8 +279,15 @@ namespace FF4Bot
             // ReSharper restore RedundantNameQualifier
             Dictionary<String, String> config = GetConfig();
 
-            GetCodes(keys, config);
+            
+            Process game = Process.GetProcessesByName("vba-v24m-svn461")[0];
+            IntPtr process = Open(game.Id);
+            IntPtr pointer1 = game.MainModule.BaseAddress + 0x4EB8F8;
+            IntPtr pointer2 = getAdress(process, pointer1, 0x240B0);
+            int result = Read(process, pointer2);
+            Console.WriteLine(result);
 
+            GetCodes(keys, config);
             Timer.AutoReset = true;
             Timer.Elapsed += TimerOnElapsed;
             Timer.Start();
