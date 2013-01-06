@@ -301,6 +301,9 @@ namespace FF4Bot
         private static int _lastKnownHPChar3 = 900;
         private const int HealThreshold = 300;
 
+        private static IntPtr process;
+        private static IntPtr pointer2;
+
         private static void Main()
         {
             // ReSharper disable RedundantNameQualifier Menschen verstehen es, VS versteht es, Travis versteht es nicht -_-
@@ -310,12 +313,9 @@ namespace FF4Bot
 
             
             Process game = Process.GetProcessesByName("vba-v24m-svn461")[0];
-            IntPtr process = Open(game.Id);
+            process = Open(game.Id);
             IntPtr pointer1 = game.MainModule.BaseAddress + 0x4EB8F8;
-            IntPtr pointer2 = getAdress(process, pointer1, 0x242C8);
-            int result = Read(process, pointer2);
-            Close(process);
-            Console.WriteLine(result);
+            pointer2 = getAdress(process, pointer1, 0x242C8);
 
             GetCodes(keys, config);
             Timer.AutoReset = true;
@@ -441,26 +441,15 @@ namespace FF4Bot
 
         private static void ReadChar3HP()
         {
-            if (Char3HunderterStelle9())
-                _lastKnownHPChar3 = 900;
-            else if (Char3HunderterStelle8())
-                _lastKnownHPChar3 = 800;
-            else if (Char3HunderterStelle7())
-                _lastKnownHPChar3 = 700;
-            else if (Char3HunderterStelle6())
-                _lastKnownHPChar3 = 600;
-            else if (Char3HunderterStelle5())
-                _lastKnownHPChar3 = 500;
-            else if (Char3HunderterStelle4())
-                _lastKnownHPChar3 = 400;
-            else if (Char3HunderterStelle3())
-                _lastKnownHPChar3 = 300;
-            else if (Char3HunderterStelle2())
-                _lastKnownHPChar3 = 200;
-            else if (Char3HunderterStelle1())
-                _lastKnownHPChar3 = 100;
+            int Hp = Read(process, pointer2);
+            if ((int)Math.Floor(Math.Log10(Hp)) + 1 > 2)
+            {
+                _lastKnownHPChar3 = Convert.ToInt32(Read(process, pointer2).ToString().Substring(0, 1));
+            }
             else
-                _lastKnownHPChar3 = 1;
+            {
+                _lastKnownHPChar3 = 0;
+            }
         }
 
         private static Dictionary<String, String> GetConfig()
