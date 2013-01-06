@@ -47,10 +47,10 @@ namespace FF4Bot
         public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
         [DllImport("kernel32.dll")]
-        static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, ref uint lpNumberOfBytesWritten);
+        private static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, ref uint lpNumberOfBytesWritten);
 
         [DllImport("kernel32.dll")]
-        static extern bool CloseHandle(IntPtr hObject);
+        private static extern bool CloseHandle(IntPtr hObject);
 
         #endregion
 
@@ -61,27 +61,27 @@ namespace FF4Bot
             return OpenProcess(0x1F0FFF, true, id);
         }
 
-        private static bool Close(IntPtr Handle)
+        private static bool Close(IntPtr handle)
         {
-            return CloseHandle(Handle);
+            return CloseHandle(handle);
         }
 
-        private static int Read(IntPtr Process, IntPtr Adress)
+        private static int Read(IntPtr process, IntPtr adress)
         {
             byte[] bytes = new byte[24];
             uint rw = 0;
-            ReadProcessMemory(Process, Adress, bytes, (UIntPtr)sizeof(int), ref rw);
+            ReadProcessMemory(process, adress, bytes, (UIntPtr) sizeof (int), ref rw);
             int result = BitConverter.ToInt32(bytes, 0);
             return result;
         }
 
-        private static IntPtr getAdress(IntPtr Process, IntPtr pointer, uint offset)
+        private static IntPtr GetAdress(IntPtr process, IntPtr pointer, uint offset)
         {
             byte[] bytes = new byte[24];
             uint rw = 0;
-            ReadProcessMemory(Process, pointer, bytes, (UIntPtr)sizeof(int), ref rw);
+            ReadProcessMemory(process, pointer, bytes, (UIntPtr) sizeof (int), ref rw);
             uint pt = BitConverter.ToUInt32(bytes, 0);
-            IntPtr var = (IntPtr)(pt + offset);
+            IntPtr var = (IntPtr) (pt + offset);
             return var;
         }
 
@@ -94,190 +94,6 @@ namespace FF4Bot
         private static readonly Object LockObject = new object();
         private static readonly Bitmap Spritesheet = new Bitmap("spritesheet.png");
 
-        #region ColorCoord Maps
-
-        private static readonly Dictionary<Point, Color> ColorCoordsMenu = new Dictionary<Point, Color>
-                                                                               {
-                                                                                   {new Point(617, 600), Color.FromArgb(248, 248, 248)},
-                                                                                   {new Point(622, 600), Color.FromArgb(200, 200, 200)},
-                                                                                   {new Point(625, 600), Color.FromArgb(32, 32, 32)},
-                                                                                   {new Point(630, 600), Color.FromArgb(32, 80, 136)}
-                                                                               };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsMenuMagicSelected = new Dictionary<Point, Color>
-                                                                                            {
-                                                                                                {new Point(666, 130), Color.FromArgb(248, 248, 248)},
-                                                                                                {new Point(670, 130), Color.FromArgb(240, 240, 240)},
-                                                                                                {new Point(674, 130), Color.FromArgb(184, 184, 184)},
-                                                                                                {new Point(678, 130), Color.FromArgb(0, 0, 0)}
-                                                                                            };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsWorldMapFacingSouth = new Dictionary<Point, Color>
-                                                                                              {
-                                                                                                  {new Point(475, 355), Color.FromArgb(72, 8, 72)},
-                                                                                                  {new Point(480, 355), Color.FromArgb(72, 8, 72)},
-                                                                                                  {new Point(495, 355), Color.FromArgb(72, 8, 72)},
-                                                                                                  {new Point(500, 355), Color.FromArgb(72, 8, 72)}
-                                                                                              };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsWorldMapFacingEast = new Dictionary<Point, Color>
-                                                                                             {
-                                                                                                 {new Point(477, 355), Color.FromArgb(72, 8, 72)},
-                                                                                                 {new Point(480, 355), Color.FromArgb(72, 8, 72)},
-                                                                                                 {new Point(485, 355), Color.FromArgb(72, 8, 72)},
-                                                                                                 {new Point(500, 355), Color.FromArgb(72, 8, 72)}
-                                                                                             };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsWorldMapFacingWest = new Dictionary<Point, Color>
-                                                                                             {
-                                                                                                 {new Point(475, 355), Color.FromArgb(72, 8, 72)},
-                                                                                                 {new Point(490, 355), Color.FromArgb(72, 8, 72)},
-                                                                                                 {new Point(495, 355), Color.FromArgb(72, 8, 72)},
-                                                                                                 {new Point(499, 355), Color.FromArgb(72, 8, 72)}
-                                                                                             };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsWorldMapFacingNorth = new Dictionary<Point, Color>
-                                                                                              {
-                                                                                                  {new Point(465, 348), Color.FromArgb(72, 8, 72)},
-                                                                                                  {new Point(465, 355), Color.FromArgb(72, 8, 72)},
-                                                                                                  {new Point(477, 363), Color.FromArgb(72, 8, 72)},
-                                                                                                  {new Point(480, 366), Color.FromArgb(72, 8, 72)}
-                                                                                              };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattle = new Dictionary<Point, Color>
-                                                                                 {
-                                                                                     {new Point(40, 505), Color.FromArgb(200, 200, 200)},
-                                                                                     {new Point(100, 505), Color.FromArgb(200, 200, 200)},
-                                                                                     {new Point(200, 505), Color.FromArgb(200, 200, 200)},
-                                                                                     {new Point(300, 505), Color.FromArgb(200, 200, 200)},
-                                                                                     {new Point(505, 505), Color.FromArgb(200, 200, 200)},
-                                                                                     {new Point(600, 505), Color.FromArgb(200, 200, 200)},
-                                                                                     {new Point(700, 505), Color.FromArgb(200, 200, 200)},
-                                                                                     {new Point(800, 505), Color.FromArgb(200, 200, 200)},
-                                                                                     {new Point(900, 505), Color.FromArgb(200, 200, 200)},
-                                                                                     {new Point(950, 505), Color.FromArgb(200, 200, 200)},
-                                                                                 };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattleLootScreen = new Dictionary<Point, Color>
-                                                                                           {
-                                                                                               {new Point(100, 355), Color.FromArgb(32, 80, 136)},
-                                                                                               {new Point(100, 360), Color.FromArgb(248, 248, 248)},
-                                                                                               {new Point(100, 365), Color.FromArgb(200, 200, 200)},
-                                                                                               {new Point(100, 367), Color.FromArgb(32, 32, 32)},
-                                                                                               {new Point(100, 370), Color.FromArgb(248, 248, 248)},
-                                                                                               {new Point(100, 375), Color.FromArgb(200, 200, 200)},
-                                                                                               {new Point(100, 380), Color.FromArgb(32, 32, 32)},
-                                                                                               {new Point(100, 385), Color.FromArgb(32, 80, 136)},
-                                                                                           };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle1 = new Dictionary<Point, Color>
-                                                                                                      {
-                                                                                                          {new Point(695, 588), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 582), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 590), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 595), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 599), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 601), Color.FromArgb(248, 248, 248)},
-                                                                                                      };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle2 = new Dictionary<Point, Color>
-                                                                                                      {
-                                                                                                          {new Point(688, 600), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(690, 600), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(693, 600), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(696, 600), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(700, 600), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(703, 600), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 595), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(697, 592), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(700, 588), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(692, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(690, 588), Color.FromArgb(248, 248, 248)},
-                                                                                                      };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle3 = new Dictionary<Point, Color>
-                                                                                                      {
-                                                                                                          {new Point(688, 605), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 605), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 600), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(700, 595), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 590), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(690, 588), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(700, 588), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(692, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                      };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle4 = new Dictionary<Point, Color>
-                                                                                                      {
-                                                                                                          {new Point(699, 582), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 590), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 595), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 600), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 605), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(688, 595), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(693, 595), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(703, 595), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(690, 590), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 588), Color.FromArgb(248, 248, 248)},
-                                                                                                      };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle5 = new Dictionary<Point, Color>
-                                                                                                      {
-                                                                                                          {new Point(690, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(700, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(690, 590), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 590), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 590), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(700, 595), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(697, 600), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(690, 605), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 605), Color.FromArgb(248, 248, 248)},
-                                                                                                      };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle6 = new Dictionary<Point, Color>
-                                                                                                      {
-                                                                                                          {new Point(690, 590), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 600), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(700, 590), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(700, 580), Color.FromArgb(248, 248, 248)},
-                                                                                                      };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle7 = new Dictionary<Point, Color>
-                                                                                                      {
-                                                                                                          {new Point(688, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(690, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(693, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(696, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(700, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(703, 585), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 590), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 594), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(699, 597), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 598), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 602), Color.FromArgb(248, 248, 248)},
-                                                                                                          {new Point(695, 605), Color.FromArgb(248, 248, 248)},
-                                                                                                      };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle8 = new Dictionary<Point, Color>
-                                                                                                      {
-                                                                                                          {new Point(666, 666), Color.FromArgb(1, 2, 3)},
-                                                                                                      };
-
-        private static readonly Dictionary<Point, Color> ColorCoordsBattleChar3HunderterStelle9 = new Dictionary<Point, Color>
-                                                                                                      {
-                                                                                                          {new Point(666, 666), Color.FromArgb(1, 2, 3)},
-                                                                                                      };
-
-        #endregion
-
         #region Spritesheet definitions
 
         private enum SpritesheetSprite
@@ -286,6 +102,11 @@ namespace FF4Bot
             WorldmapCecilEast,
             WorldmapCecilWest,
             WorldmapCecilNorth,
+            StartMenu,
+            BattleScreen,
+            BattleLootScreen,
+            SelectionHand,
+            SelectionHandFaded
         }
 
         private static readonly Dictionary<SpritesheetSprite, Rectangle> SpritesheetSpriteRectangles = new Dictionary<SpritesheetSprite, Rectangle>
@@ -294,6 +115,11 @@ namespace FF4Bot
                                                                                                                {SpritesheetSprite.WorldmapCecilEast, new Rectangle(8, 1, 6, 5)},
                                                                                                                {SpritesheetSprite.WorldmapCecilWest, new Rectangle(15, 1, 6, 5)},
                                                                                                                {SpritesheetSprite.WorldmapCecilNorth, new Rectangle(22, 1, 6, 5)},
+                                                                                                               {SpritesheetSprite.StartMenu, new Rectangle(1, 7, 6, 5)},
+                                                                                                               {SpritesheetSprite.BattleScreen, new Rectangle(1, 13, 6, 5)},
+                                                                                                               {SpritesheetSprite.BattleLootScreen, new Rectangle(8, 13, 6, 5)},
+                                                                                                               {SpritesheetSprite.SelectionHand, new Rectangle(1, 19, 6, 5)},
+                                                                                                               {SpritesheetSprite.SelectionHandFaded, new Rectangle(8, 19, 6, 5)},
                                                                                                            };
 
         #endregion
@@ -301,8 +127,8 @@ namespace FF4Bot
         private static int _lastKnownHPChar3 = 900;
         private const int HealThreshold = 300;
 
-        private static IntPtr process;
-        private static IntPtr pointer2;
+        private static IntPtr _process;
+        private static IntPtr _pointer2;
 
         private static void Main()
         {
@@ -311,11 +137,11 @@ namespace FF4Bot
             // ReSharper restore RedundantNameQualifier
             Dictionary<String, String> config = GetConfig();
 
-            
+
             Process game = Process.GetProcessesByName("vba-v24m-svn461")[0];
-            process = Open(game.Id);
+            _process = Open(game.Id);
             IntPtr pointer1 = game.MainModule.BaseAddress + 0x4EB8F8;
-            pointer2 = getAdress(process, pointer1, 0x242C8);
+            _pointer2 = GetAdress(_process, pointer1, 0x242C8);
 
             GetCodes(keys, config);
             Timer.AutoReset = true;
@@ -378,9 +204,9 @@ namespace FF4Bot
 
         private static void InterpretScreenshot()
         {
-            Console.Out.WriteLine("HP: {0}", _lastKnownHPChar3);
-
             HoldTurboButton();
+
+            #region Niedrige HP und auf der Weltkarte
 
             if (_lastKnownHPChar3 < HealThreshold && (InWorldMapFacingEast() || InWorldMapFacingNorth() || InWorldMapFacingSouth() || InWorldMapFacingWest()))
             {
@@ -388,15 +214,14 @@ namespace FF4Bot
                 return;
             }
 
-            if (InWorldMapFacingNorth()) Console.Out.WriteLine("NORTH");
-            if (InWorldMapFacingWest()) Console.Out.WriteLine("WEST");
-            if (InWorldMapFacingEast()) Console.Out.WriteLine("EAST");
-            if (InWorldMapFacingSouth()) Console.Out.WriteLine("SOUTH");
+            #endregion
 
-            return;
+            #region Im Menü
 
             if (InMenu())
             {
+                #region HP niedrig
+
                 if (_lastKnownHPChar3 < HealThreshold)
                 {
                     if (!InMenuMagicSelected())
@@ -409,8 +234,14 @@ namespace FF4Bot
                     return;
                 }
 
+                #endregion
+
                 PressB();
             }
+
+            #endregion
+
+            #region Auf der Weltkarte, Blick Richtung Ost Nord oder Süd
 
             if (InWorldMapFacingEast() || InWorldMapFacingNorth() || InWorldMapFacingSouth())
             {
@@ -418,11 +249,19 @@ namespace FF4Bot
                 return;
             }
 
+            #endregion
+
+            #region Auf der Weltkarte, Blick Richtung West
+
             if (InWorldMapFacingWest())
             {
                 DirectionRight();
                 return;
             }
+
+            #endregion
+
+            #region Im Kampf
 
             if (InBattle())
             {
@@ -431,25 +270,23 @@ namespace FF4Bot
                 return;
             }
 
+            #endregion
+
+            #region Nach dem Kampf im Loot-Bildschirm
+
             if (InBattleLootScreen())
             {
                 PressA();
                 return;
             }
+
+            #endregion
         }
 
 
         private static void ReadChar3HP()
         {
-            int Hp = Read(process, pointer2);
-            if ((int)Math.Floor(Math.Log10(Hp)) + 1 > 2)
-            {
-                _lastKnownHPChar3 = Convert.ToInt32(Read(process, pointer2).ToString().Substring(0, 1));
-            }
-            else
-            {
-                _lastKnownHPChar3 = 0;
-            }
+            if (InBattle()) _lastKnownHPChar3 = Read(_process, _pointer2);
         }
 
         private static Dictionary<String, String> GetConfig()
@@ -487,12 +324,20 @@ namespace FF4Bot
 
         private static bool InMenu()
         {
-            return ColorCoordsMenu.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.StartMenu, 160, 166);
         }
 
         private static bool InMenuMagicSelected()
         {
-            return ColorCoordsMenuMagicSelected.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.SelectionHand, 164, 67);
+        }
+
+        private static bool InMenuMagicSelectedChoosingCharacter()
+        {
+            if (SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.SelectionHandFaded, 164, 67))
+                return true;
+
+            return false;
         }
 
         private static bool InWorldMapFacingEast()
@@ -541,57 +386,12 @@ namespace FF4Bot
 
         private static bool InBattle()
         {
-            return ColorCoordsBattle.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.BattleScreen, 241, 163);
         }
 
         private static bool InBattleLootScreen()
         {
-            return ColorCoordsBattleLootScreen.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
-        }
-
-        private static bool Char3HunderterStelle1()
-        {
-            return ColorCoordsBattleChar3HunderterStelle1.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
-        }
-
-        private static bool Char3HunderterStelle2()
-        {
-            return ColorCoordsBattleChar3HunderterStelle2.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
-        }
-
-        private static bool Char3HunderterStelle3()
-        {
-            return ColorCoordsBattleChar3HunderterStelle3.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
-        }
-
-        private static bool Char3HunderterStelle4()
-        {
-            return ColorCoordsBattleChar3HunderterStelle4.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
-        }
-
-        private static bool Char3HunderterStelle5()
-        {
-            return ColorCoordsBattleChar3HunderterStelle5.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
-        }
-
-        private static bool Char3HunderterStelle6()
-        {
-            return ColorCoordsBattleChar3HunderterStelle6.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
-        }
-
-        private static bool Char3HunderterStelle7()
-        {
-            return ColorCoordsBattleChar3HunderterStelle7.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
-        }
-
-        private static bool Char3HunderterStelle8()
-        {
-            return ColorCoordsBattleChar3HunderterStelle8.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
-        }
-
-        private static bool Char3HunderterStelle9()
-        {
-            return ColorCoordsBattleChar3HunderterStelle9.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.BattleLootScreen, 89, 126);
         }
 
         #endregion
