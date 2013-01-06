@@ -444,7 +444,7 @@ namespace FF4Bot
             int Hp = Read(process, pointer2);
             if ((int)Math.Floor(Math.Log10(Hp)) + 1 > 2)
             {
-                _lastKnownHPChar3 = Convert.ToInt32(Read(process, pointer2).ToString().Substring(0, 1));
+                _lastKnownHPChar3 = Convert.ToInt32(Read(process, pointer2).ToString().Substring(0, 1)) * 100;
             }
             else
             {
