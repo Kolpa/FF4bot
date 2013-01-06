@@ -291,7 +291,7 @@ namespace FF4Bot
             Process game = Process.GetProcessesByName("vba-v24m-svn461")[0];
             IntPtr process = Open(game.Id);
             IntPtr pointer1 = game.MainModule.BaseAddress + 0x4EB8F8;
-            IntPtr pointer2 = getAdress(process, pointer1, 0x240B0);
+            IntPtr pointer2 = getAdress(process, pointer1, 0x242C8);
             int result = Read(process, pointer2);
             Close(process);
             Console.WriteLine(result);
