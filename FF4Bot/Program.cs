@@ -27,6 +27,8 @@ namespace FF4Bot
         private static VirtualKeyCode _kright;
         private static VirtualKeyCode _ka;
         private static VirtualKeyCode _kb;
+        private static VirtualKeyCode _kl;
+        private static VirtualKeyCode _kr;
         private static VirtualKeyCode _kstart;
         private static VirtualKeyCode _kspeed;
 
@@ -87,7 +89,7 @@ namespace FF4Bot
 
         #endregion
 
-        private static readonly Timer Timer = new Timer(150);
+        private static readonly Timer Timer = new Timer(100);
         private static Rectangle _bounds;
         private static IntPtr _activeWindowHandle;
         private static Bitmap _bitmap;
@@ -106,7 +108,9 @@ namespace FF4Bot
             BattleScreen,
             BattleLootScreen,
             SelectionHand,
-            SelectionHandFaded
+            SelectionHandFaded,
+            StartMenuMagicMenu,
+            StartMenuChoosingMagicTarget
         }
 
         private static readonly Dictionary<SpritesheetSprite, Rectangle> SpritesheetSpriteRectangles = new Dictionary<SpritesheetSprite, Rectangle>
@@ -120,12 +124,15 @@ namespace FF4Bot
                                                                                                                {SpritesheetSprite.BattleLootScreen, new Rectangle(8, 13, 6, 5)},
                                                                                                                {SpritesheetSprite.SelectionHand, new Rectangle(1, 19, 6, 5)},
                                                                                                                {SpritesheetSprite.SelectionHandFaded, new Rectangle(8, 19, 6, 5)},
+                                                                                                               {SpritesheetSprite.StartMenuMagicMenu, new Rectangle(8, 7, 6, 5)},
+                                                                                                               {SpritesheetSprite.StartMenuChoosingMagicTarget, new Rectangle(15, 7, 6, 5)},
                                                                                                            };
 
         #endregion
 
         private static int _lastKnownHPChar3 = 900;
         private const int HealThreshold = 300;
+        private const int StopHealThreshold = 700;
 
         private static IntPtr _process;
         private static IntPtr _pointer2;
@@ -136,7 +143,6 @@ namespace FF4Bot
             Dictionary<Int32, VirtualKeyCode> keys = FF4Bot.Keys.Vb2Vk();
             // ReSharper restore RedundantNameQualifier
             Dictionary<String, String> config = GetConfig();
-
 
             Process game = Process.GetProcessesByName("vba-v24m-svn461")[0];
             _process = Open(game.Id);
@@ -161,6 +167,8 @@ namespace FF4Bot
             Int32 tright = Convert.ToInt32(config["Joy1_Right"]);
             Int32 ta = Convert.ToInt32(config["Joy1_A"]);
             Int32 tb = Convert.ToInt32(config["Joy1_B"]);
+            Int32 tl = Convert.ToInt32(config["Joy1_L"]);
+            Int32 tr = Convert.ToInt32(config["Joy1_R"]);
             Int32 tsta = Convert.ToInt32(config["Joy1_Start"]);
             Int32 tspeed = Convert.ToInt32(config["Joy1_Speed"]);
 
@@ -170,6 +178,8 @@ namespace FF4Bot
             _kright = keys[tright];
             _ka = keys[ta];
             _kb = keys[tb];
+            _kl = keys[tl];
+            _kr = keys[tr];
             _kstart = keys[tsta];
             _kspeed = keys[tspeed];
         }
@@ -183,6 +193,7 @@ namespace FF4Bot
         {
             lock (LockObject)
             {
+                Console.Out.WriteLine("===========================================");
                 MainLoop();
             }
         }
@@ -220,25 +231,103 @@ namespace FF4Bot
 
             if (InMenu())
             {
+                Console.Out.WriteLine("Im Menü.");
+                
                 #region HP niedrig
 
-                if (_lastKnownHPChar3 < HealThreshold)
+                if (_lastKnownHPChar3 < StopHealThreshold)
                 {
-                    if (!InMenuMagicSelected())
+                    Console.Out.WriteLine("Sollte heilen.");
+
+                    #region Cursor nicht auf Menüpunkt "Magie"
+
+                    if (!InMenuMagicSelected() && !InMenuMagicSelectedChoosingCharacter() && !InMenuChoosingMagicTarget())
                     {
+                        Console.Out.WriteLine("Bewege Cursor auf 'Magie'");
                         DirectionDown();
                         return;
                     }
 
-                    PressA();
-                    return;
+                    #endregion
+
+
+                    #region Cursor auf Menüpunkt "Magie", aber noch nicht angeklickt
+
+                    if (InMenuMagicSelected() && !InMenuMagicSelectedChoosingCharacter())
+                    {
+                        Console.Out.WriteLine("Cursor ist auf 'Magie', drücke A.");
+                        PressA();
+                        return;
+                    }
+
+                    #endregion
+
+                    if (!InMenuMagicSelectedChar3Selected())
+                    {
+                        Console.Out.WriteLine("Wähle Char3 als Caster aus.");
+                        DirectionDown();
+                        return;
+                    }
+
+                    #region Char3 als Caster markiert
+                    if (InMenuMagicSelectedChar3Selected() && !InMenuChoosingMagicTarget())
+                    {
+                        Console.Out.WriteLine("Bestätige Char3 als Caster.");
+                        PressA();
+                        return;
+                    }
+
+                    #endregion
+
+                    #region Wähle Zauber-Ziel
+                    if (InMenuChoosingMagicTarget())
+                    {
+                        Console.Out.WriteLine("Wähle Zauber-Ziel aus.");
+                        if (!InMenuMagicSelectedChar3Selected())
+                        {
+                            Console.Out.WriteLine("Wähle Char3 als Zauberziel aus.");
+                            DirectionDown();
+                            return;
+                        }
+
+                        if (_lastKnownHPChar3 < StopHealThreshold)
+                        {
+                            Console.Out.WriteLine("Heile Char3.");
+                            PressA();
+                            _lastKnownHPChar3 += 100;
+                            return;
+                        }
+                    }
+                    #endregion
+                    
                 }
 
                 #endregion
 
+                Console.Out.WriteLine("Verlasse das Menü.");
                 PressB();
+                return;
             }
 
+            #endregion
+
+            #region Im Magie-Menü
+            if (InMenuMagicMenu())
+            {
+                Console.Out.WriteLine("Bin im Magie-Menü.");
+                if (_lastKnownHPChar3 >= StopHealThreshold)
+                {
+                    Console.Out.WriteLine("Verlasse das Magie-Menü.");
+                    PressB();
+                }
+                else
+                {
+                    Console.Out.WriteLine("Drücke im Magie-Menü A.");
+                    PressA();
+                }
+                
+                return;
+            }
             #endregion
 
             #region Auf der Weltkarte, Blick Richtung Ost Nord oder Süd
@@ -265,6 +354,13 @@ namespace FF4Bot
 
             if (InBattle())
             {
+                if (_lastKnownHPChar3 < HealThreshold)
+                {
+                    Console.Out.WriteLine("Fliehe aus dem Kampf.");
+                    HoldLR();
+                    return;
+                }
+                
                 PressA();
                 ReadChar3HP();
                 return;
@@ -281,8 +377,13 @@ namespace FF4Bot
             }
 
             #endregion
-        }
 
+            #region Fallback: Weltkarte, aber anderer char als Cecil sichtbar
+
+            StopHoldingLR();
+            PressR();
+            #endregion
+        }
 
         private static void ReadChar3HP()
         {
@@ -334,10 +435,22 @@ namespace FF4Bot
 
         private static bool InMenuMagicSelectedChoosingCharacter()
         {
-            if (SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.SelectionHandFaded, 164, 67))
-                return true;
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.SelectionHandFaded, 164, 67);
+        }
 
-            return false;
+        private static bool InMenuMagicSelectedChar3Selected()
+        {
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.SelectionHand, 12, 127);
+        }
+
+        private static bool InMenuMagicMenu()
+        {
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.StartMenuMagicMenu, 85, 101);
+        }
+
+        private static bool InMenuChoosingMagicTarget()
+        {
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.StartMenuChoosingMagicTarget, 170, 178);
         }
 
         private static bool InWorldMapFacingEast()
@@ -403,6 +516,18 @@ namespace FF4Bot
             InputSimulator.SimulateKeyDown(_kspeed);
         }
 
+        private static void HoldLR()
+        {
+            InputSimulator.SimulateKeyDown(_kl);
+            InputSimulator.SimulateKeyDown(_kr);
+        }
+
+        private static void StopHoldingLR()
+        {
+            InputSimulator.SimulateKeyUp(_kl);
+            InputSimulator.SimulateKeyUp(_kr);
+        }
+
         private static void DirectionRight()
         {
             LongPressKey(_kright);
@@ -433,9 +558,14 @@ namespace FF4Bot
             LongPressKey(_ka);
         }
 
+        private static void PressR()
+        {
+            LongPressKey(_kr);
+        }
+
         private static void LongPressKey(VirtualKeyCode code)
         {
-            Console.Out.Write("Drücke Taste: " + code + "\n");
+            //Console.Out.Write("Drücke Taste: " + code + "\n");
             InputSimulator.SimulateKeyDown(code);
             Thread.Sleep(20);
             InputSimulator.SimulateKeyUp(code);
