@@ -49,6 +49,9 @@ namespace FF4Bot
         [DllImport("kernel32.dll")]
         static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, ref uint lpNumberOfBytesWritten);
 
+        [DllImport("kernel32.dll")]
+        static extern bool CloseHandle(IntPtr hObject);
+
         #endregion
 
         #region Dll Wrapper
@@ -56,6 +59,11 @@ namespace FF4Bot
         private static IntPtr Open(int id)
         {
             return OpenProcess(0x1F0FFF, true, id);
+        }
+
+        private static bool Close(IntPtr Handle)
+        {
+            return CloseHandle(Handle);
         }
 
         private static int Read(IntPtr Process, IntPtr Adress)
@@ -285,6 +293,7 @@ namespace FF4Bot
             IntPtr pointer1 = game.MainModule.BaseAddress + 0x4EB8F8;
             IntPtr pointer2 = getAdress(process, pointer1, 0x240B0);
             int result = Read(process, pointer2);
+            Close(process);
             Console.WriteLine(result);
 
             GetCodes(keys, config);
