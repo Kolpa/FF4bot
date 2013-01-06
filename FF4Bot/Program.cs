@@ -68,11 +68,18 @@ namespace FF4Bot
             return CloseHandle(handle);
         }
 
-        private static int Read(IntPtr process, IntPtr adress)
+        private static int Read(IntPtr process, IntPtr adress, Boolean mode)
         {
             byte[] bytes = new byte[24];
             uint rw = 0;
-            ReadProcessMemory(process, adress, bytes, (UIntPtr) sizeof (int), ref rw);
+            if (mode)
+            {
+                ReadProcessMemory(process, adress, bytes, (UIntPtr)sizeof(int), ref rw);
+            }
+            else
+            {
+                ReadProcessMemory(process, adress, bytes, (UIntPtr)sizeof(byte), ref rw);
+            }
             int result = BitConverter.ToInt32(bytes, 0);
             return result;
         }
@@ -135,7 +142,8 @@ namespace FF4Bot
         private const int StopHealThreshold = 700;
 
         private static IntPtr _process;
-        private static IntPtr _pointer2;
+        private static IntPtr _fightHpPointer;
+        private static IntPtr _mapMpPointer;
 
         private static void Main()
         {
@@ -144,10 +152,18 @@ namespace FF4Bot
             // ReSharper restore RedundantNameQualifier
             Dictionary<String, String> config = GetConfig();
 
-            Process game = Process.GetProcessesByName("vba-v24m-svn461")[0];
+            Process game = Process.GetProcessesByName(EmulatorProcessName)[0];
             _process = Open(game.Id);
-            IntPtr pointer1 = game.MainModule.BaseAddress + 0x4EB8F8;
-            _pointer2 = GetAdress(_process, pointer1, 0x242C8);
+
+            IntPtr FightPointer = game.MainModule.BaseAddress + 0x4EB8F8;
+            IntPtr MapPointer = game.MainModule.BaseAddress + 0x41E380;
+
+            _mapMpPointer = GetAdress(_process, MapPointer, 0x607C);
+            _fightHpPointer = GetAdress(_process, FightPointer, 0x240B0);
+
+            int mpP = Read(_process, _mapMpPointer, false);
+
+            int hp = Read(_process, _fightHpPointer, true);
 
             GetCodes(keys, config);
             Timer.AutoReset = true;
@@ -387,7 +403,7 @@ namespace FF4Bot
 
         private static void ReadChar3HP()
         {
-            if (InBattle()) _lastKnownHPChar3 = Read(_process, _pointer2);
+            if (InBattle()) _lastKnownHPChar3 = Read(_process, _fightHpPointer, true);
         }
 
         private static Dictionary<String, String> GetConfig()
