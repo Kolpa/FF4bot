@@ -240,12 +240,18 @@ namespace FF4Bot
 
         private enum SpritesheetSprite
         {
-            WorldmapCecilSouth
+            WorldmapCecilSouth,
+            WorldmapCecilEast,
+            WorldmapCecilWest,
+            WorldmapCecilNorth,
         }
 
         private static readonly Dictionary<SpritesheetSprite, Rectangle> SpritesheetSpriteRectangles = new Dictionary<SpritesheetSprite, Rectangle>
                                                                                                            {
                                                                                                                {SpritesheetSprite.WorldmapCecilSouth, new Rectangle(1, 1, 6, 5)},
+                                                                                                               {SpritesheetSprite.WorldmapCecilEast, new Rectangle(8, 1, 6, 5)},
+                                                                                                               {SpritesheetSprite.WorldmapCecilWest, new Rectangle(15, 1, 6, 5)},
+                                                                                                               {SpritesheetSprite.WorldmapCecilNorth, new Rectangle(22, 1, 6, 5)},
                                                                                                            };
 
         #endregion
@@ -331,6 +337,13 @@ namespace FF4Bot
                 OpenMenu();
                 return;
             }
+
+            if (InWorldMapFacingNorth()) Console.Out.WriteLine("NORTH");
+            if (InWorldMapFacingWest()) Console.Out.WriteLine("WEST");
+            if (InWorldMapFacingEast()) Console.Out.WriteLine("EAST");
+            if (InWorldMapFacingSouth()) Console.Out.WriteLine("SOUTH");
+
+            return;
 
             if (InMenu())
             {
@@ -445,17 +458,17 @@ namespace FF4Bot
 
         private static bool InWorldMapFacingEast()
         {
-            return ColorCoordsWorldMapFacingEast.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilEast, 128, 124);
         }
 
         private static bool InWorldMapFacingWest()
         {
-            return ColorCoordsWorldMapFacingWest.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilWest, 122, 124);
         }
 
         private static bool InWorldMapFacingNorth()
         {
-            return ColorCoordsWorldMapFacingNorth.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilNorth, 125, 122);
         }
 
         private static bool InWorldMapFacingSouth()
