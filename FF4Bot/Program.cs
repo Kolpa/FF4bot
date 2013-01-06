@@ -68,18 +68,11 @@ namespace FF4Bot
             return CloseHandle(handle);
         }
 
-        private static int Read(IntPtr process, IntPtr adress, Boolean mode)
+        private static int Read(IntPtr process, IntPtr adress, int iBytesToRead = 2)
         {
             byte[] bytes = new byte[24];
             uint rw = 0;
-            if (mode)
-            {
-                ReadProcessMemory(process, adress, bytes, (UIntPtr)sizeof(int), ref rw);
-            }
-            else
-            {
-                ReadProcessMemory(process, adress, bytes, (UIntPtr)sizeof(byte), ref rw);
-            }
+            ReadProcessMemory(process, adress, bytes, (UIntPtr)iBytesToRead, ref rw);
             int result = BitConverter.ToInt32(bytes, 0);
             return result;
         }
@@ -137,13 +130,13 @@ namespace FF4Bot
 
         #endregion
 
-        private static int _lastKnownHPChar3 = 900;
         private const int HealThreshold = 300;
         private const int StopHealThreshold = 700;
 
         private static IntPtr _process;
-        private static IntPtr _fightHpPointer;
-        private static IntPtr _mapMpPointer;
+        private static IntPtr _ptrChar3FieldHP;
+        private static IntPtr _ptrChar3FieldMP;
+        private static IntPtr _ptrChar3BattleHP;
 
         private static void Main()
         {
@@ -155,15 +148,13 @@ namespace FF4Bot
             Process game = Process.GetProcessesByName(EmulatorProcessName)[0];
             _process = Open(game.Id);
 
-            IntPtr FightPointer = game.MainModule.BaseAddress + 0x4EB8F8;
-            IntPtr MapPointer = game.MainModule.BaseAddress + 0x41E380;
+            IntPtr ptrChar3FieldHPNoOffset = game.MainModule.BaseAddress + 0x41E380;
+            IntPtr ptrChar3FieldMPNoOffset = game.MainModule.BaseAddress + 0x41E380;
+            IntPtr ptrChar3BattleHPNoOffset = game.MainModule.BaseAddress + 0x4EB8F8;
 
-            _mapMpPointer = GetAdress(_process, MapPointer, 0x607C);
-            _fightHpPointer = GetAdress(_process, FightPointer, 0x240B0);
-
-            int mpP = Read(_process, _mapMpPointer, false);
-
-            int hp = Read(_process, _fightHpPointer, true);
+            _ptrChar3FieldHP = GetAdress(_process, ptrChar3FieldHPNoOffset, 0x6078);
+            _ptrChar3FieldMP = GetAdress(_process, ptrChar3FieldMPNoOffset, 0x607C);
+            _ptrChar3BattleHP = GetAdress(_process, ptrChar3BattleHPNoOffset, 0x242C8);
 
             GetCodes(keys, config);
             Timer.AutoReset = true;
@@ -235,11 +226,12 @@ namespace FF4Bot
 
             #region Niedrige HP und auf der Weltkarte
 
-            if (_lastKnownHPChar3 < HealThreshold && (InWorldMapFacingEast() || InWorldMapFacingNorth() || InWorldMapFacingSouth() || InWorldMapFacingWest()))
+            if (ReadChar3HP() < HealThreshold && (InWorldMapFacingEast() || InWorldMapFacingNorth() || InWorldMapFacingSouth() || InWorldMapFacingWest()))
             {
                 OpenMenu();
                 return;
             }
+            Console.Out.WriteLine("HP: {0}", ReadChar3HP());
 
             #endregion
 
@@ -251,7 +243,7 @@ namespace FF4Bot
                 
                 #region HP niedrig
 
-                if (_lastKnownHPChar3 < StopHealThreshold)
+                if (ReadChar3HP() < StopHealThreshold)
                 {
                     Console.Out.WriteLine("Sollte heilen.");
 
@@ -266,7 +258,6 @@ namespace FF4Bot
 
                     #endregion
 
-
                     #region Cursor auf Menüpunkt "Magie", aber noch nicht angeklickt
 
                     if (InMenuMagicSelected() && !InMenuMagicSelectedChoosingCharacter())
@@ -278,12 +269,14 @@ namespace FF4Bot
 
                     #endregion
 
+                    #region Menüpunkt "Magie" ausgewählt, noch kein Caster ausgewählt
                     if (!InMenuMagicSelectedChar3Selected())
                     {
                         Console.Out.WriteLine("Wähle Char3 als Caster aus.");
                         DirectionDown();
                         return;
                     }
+                    #endregion
 
                     #region Char3 als Caster markiert
                     if (InMenuMagicSelectedChar3Selected() && !InMenuChoosingMagicTarget())
@@ -306,11 +299,11 @@ namespace FF4Bot
                             return;
                         }
 
-                        if (_lastKnownHPChar3 < StopHealThreshold)
+                        if (ReadChar3HP() < StopHealThreshold)
                         {
                             Console.Out.WriteLine("Heile Char3.");
                             PressA();
-                            _lastKnownHPChar3 += 100;
+                            ReadChar3HP();
                             return;
                         }
                     }
@@ -331,7 +324,7 @@ namespace FF4Bot
             if (InMenuMagicMenu())
             {
                 Console.Out.WriteLine("Bin im Magie-Menü.");
-                if (_lastKnownHPChar3 >= StopHealThreshold)
+                if (ReadChar3HP() >= StopHealThreshold)
                 {
                     Console.Out.WriteLine("Verlasse das Magie-Menü.");
                     PressB();
@@ -370,15 +363,14 @@ namespace FF4Bot
 
             if (InBattle())
             {
-                if (_lastKnownHPChar3 < HealThreshold)
+                if (ReadChar3HP() < HealThreshold)
                 {
-                    Console.Out.WriteLine("Fliehe aus dem Kampf.");
+                    Console.Out.WriteLine("Fliehe aus dem Kampf: {0} HP",ReadChar3HP());
                     HoldLR();
                     return;
                 }
                 
                 PressA();
-                ReadChar3HP();
                 return;
             }
 
@@ -401,9 +393,14 @@ namespace FF4Bot
             #endregion
         }
 
-        private static void ReadChar3HP()
+        private static int ReadChar3HP()
         {
-            if (InBattle()) _lastKnownHPChar3 = Read(_process, _fightHpPointer, true);
+            return Read(_process, InBattle() ? _ptrChar3BattleHP : _ptrChar3FieldHP);
+        }
+
+        private static void ReadChar3MP()
+        {
+            
         }
 
         private static Dictionary<String, String> GetConfig()
