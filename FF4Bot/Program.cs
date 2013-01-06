@@ -92,6 +92,7 @@ namespace FF4Bot
         private static IntPtr _activeWindowHandle;
         private static Bitmap _bitmap;
         private static readonly Object LockObject = new object();
+        private static readonly Bitmap Spritesheet = new Bitmap("spritesheet.png");
 
         #region ColorCoord Maps
 
@@ -277,6 +278,26 @@ namespace FF4Bot
 
         #endregion
 
+        #region Spritesheet definitions
+
+        private enum SpritesheetSprite
+        {
+            WorldmapCecilSouth,
+            WorldmapCecilEast,
+            WorldmapCecilWest,
+            WorldmapCecilNorth,
+        }
+
+        private static readonly Dictionary<SpritesheetSprite, Rectangle> SpritesheetSpriteRectangles = new Dictionary<SpritesheetSprite, Rectangle>
+                                                                                                           {
+                                                                                                               {SpritesheetSprite.WorldmapCecilSouth, new Rectangle(1, 1, 6, 5)},
+                                                                                                               {SpritesheetSprite.WorldmapCecilEast, new Rectangle(8, 1, 6, 5)},
+                                                                                                               {SpritesheetSprite.WorldmapCecilWest, new Rectangle(15, 1, 6, 5)},
+                                                                                                               {SpritesheetSprite.WorldmapCecilNorth, new Rectangle(22, 1, 6, 5)},
+                                                                                                           };
+
+        #endregion
+
         private static int _lastKnownHPChar3 = 900;
         private const int HealThreshold = 300;
 
@@ -327,6 +348,11 @@ namespace FF4Bot
             _kspeed = keys[tspeed];
         }
 
+        private static Bitmap GetSpritesheetSprite(SpritesheetSprite sprite)
+        {
+            return Spritesheet.Clone(SpritesheetSpriteRectangles[sprite], Spritesheet.PixelFormat);
+        }
+
         private static void TimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
         {
             lock (LockObject)
@@ -361,6 +387,13 @@ namespace FF4Bot
                 OpenMenu();
                 return;
             }
+
+            if (InWorldMapFacingNorth()) Console.Out.WriteLine("NORTH");
+            if (InWorldMapFacingWest()) Console.Out.WriteLine("WEST");
+            if (InWorldMapFacingEast()) Console.Out.WriteLine("EAST");
+            if (InWorldMapFacingSouth()) Console.Out.WriteLine("SOUTH");
+
+            return;
 
             if (InMenu())
             {
@@ -475,22 +508,46 @@ namespace FF4Bot
 
         private static bool InWorldMapFacingEast()
         {
-            return ColorCoordsWorldMapFacingEast.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilEast, 128, 124);
         }
 
         private static bool InWorldMapFacingWest()
         {
-            return ColorCoordsWorldMapFacingWest.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilWest, 122, 124);
         }
 
         private static bool InWorldMapFacingNorth()
         {
-            return ColorCoordsWorldMapFacingNorth.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilNorth, 125, 122);
         }
 
         private static bool InWorldMapFacingSouth()
         {
-            return ColorCoordsWorldMapFacingSouth.All(colorPoint => _bitmap.GetPixel(colorPoint.Key.X, colorPoint.Key.Y) == colorPoint.Value);
+            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilSouth, 125, 125);
+        }
+
+        private static bool SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite sprite, int x, int y)
+        {
+            Bitmap target = GetSpritesheetSprite(sprite);
+            Bitmap crop = _bitmap.Clone(new Rectangle(new Point(x, y), target.Size), target.PixelFormat);
+            return BitmapsAreIdentical(target, crop);
+        }
+
+        private static bool BitmapsAreIdentical(Bitmap image1, Bitmap image2)
+        {
+            if (image1.Size != image2.Size)
+                return false;
+
+            for (int x = 0; x < image1.Width; x++)
+            {
+                for (int y = 0; y < image1.Height; y++)
+                {
+                    if (image1.GetPixel(x, y) != image2.GetPixel(x, y))
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool InBattle()
