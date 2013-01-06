@@ -72,7 +72,7 @@ namespace FF4Bot
         {
             byte[] bytes = new byte[24];
             uint rw = 0;
-            ReadProcessMemory(process, adress, bytes, (UIntPtr)iBytesToRead, ref rw);
+            ReadProcessMemory(process, adress, bytes, (UIntPtr) iBytesToRead, ref rw);
             int result = BitConverter.ToInt32(bytes, 0);
             return result;
         }
@@ -105,7 +105,6 @@ namespace FF4Bot
             WorldmapCecilWest,
             WorldmapCecilNorth,
             StartMenu,
-            BattleScreen,
             BattleLootScreen,
             SelectionHand,
             SelectionHandFaded,
@@ -120,7 +119,6 @@ namespace FF4Bot
                                                                                                                {SpritesheetSprite.WorldmapCecilWest, new Rectangle(15, 1, 6, 5)},
                                                                                                                {SpritesheetSprite.WorldmapCecilNorth, new Rectangle(22, 1, 6, 5)},
                                                                                                                {SpritesheetSprite.StartMenu, new Rectangle(1, 7, 6, 5)},
-                                                                                                               {SpritesheetSprite.BattleScreen, new Rectangle(1, 13, 6, 5)},
                                                                                                                {SpritesheetSprite.BattleLootScreen, new Rectangle(8, 13, 6, 5)},
                                                                                                                {SpritesheetSprite.SelectionHand, new Rectangle(1, 19, 6, 5)},
                                                                                                                {SpritesheetSprite.SelectionHandFaded, new Rectangle(8, 19, 6, 5)},
@@ -130,13 +128,16 @@ namespace FF4Bot
 
         #endregion
 
-        private const int HealThreshold = 300;
-        private const int StopHealThreshold = 700;
-
         private static IntPtr _process;
+        private static IntPtr _ptrChar3MaxHP;
         private static IntPtr _ptrChar3FieldHP;
         private static IntPtr _ptrChar3FieldMP;
         private static IntPtr _ptrChar3BattleHP;
+        private static IntPtr _ptrChar3BattleMP;
+        private static IntPtr _ptrFieldDisplayedCharIndex;
+        private static IntPtr _ptrBattleFlag;
+        private static IntPtr _ptrStartMenuItemMenuFlag;
+        private static IntPtr _ptrStartMenuOptionCursorPosition;
 
         private static void Main()
         {
@@ -148,13 +149,25 @@ namespace FF4Bot
             Process game = Process.GetProcessesByName(EmulatorProcessName)[0];
             _process = Open(game.Id);
 
+            IntPtr ptrChar3MaxHPNoOffset = game.MainModule.BaseAddress + 0x41E380;
             IntPtr ptrChar3FieldHPNoOffset = game.MainModule.BaseAddress + 0x41E380;
             IntPtr ptrChar3FieldMPNoOffset = game.MainModule.BaseAddress + 0x41E380;
             IntPtr ptrChar3BattleHPNoOffset = game.MainModule.BaseAddress + 0x4EB8F8;
+            IntPtr ptrChar3BattleMPNoOffset = game.MainModule.BaseAddress + 0x4EB8F8;
+            IntPtr ptrFieldDisplayedCharIndexNoOffset = game.MainModule.BaseAddress + 0x41E380;
+            IntPtr ptrBattleFlagNoOffset = game.MainModule.BaseAddress + 0x41E380;
+            IntPtr ptrStartMenuItemMenuNoOffset = game.MainModule.BaseAddress + 0x41E3A0;
+            IntPtr ptrStartMenuOptionCursorPositionNoOffset = game.MainModule.BaseAddress + 0x41E380;
 
+            _ptrChar3MaxHP = GetAdress(_process, ptrChar3MaxHPNoOffset, 0x607A);
             _ptrChar3FieldHP = GetAdress(_process, ptrChar3FieldHPNoOffset, 0x6078);
             _ptrChar3FieldMP = GetAdress(_process, ptrChar3FieldMPNoOffset, 0x607C);
             _ptrChar3BattleHP = GetAdress(_process, ptrChar3BattleHPNoOffset, 0x242C8);
+            _ptrChar3BattleMP = GetAdress(_process, ptrChar3BattleMPNoOffset, 0x242CC);
+            _ptrFieldDisplayedCharIndex = GetAdress(_process, ptrFieldDisplayedCharIndexNoOffset, 0x6440);
+            _ptrBattleFlag = GetAdress(_process, ptrBattleFlagNoOffset, 0x2E);
+            _ptrStartMenuItemMenuFlag = GetAdress(_process, ptrStartMenuItemMenuNoOffset, 0x59FE);
+            _ptrStartMenuOptionCursorPosition = GetAdress(_process, ptrStartMenuOptionCursorPositionNoOffset, 0x22C6A);
 
             GetCodes(keys, config);
             Timer.AutoReset = true;
@@ -226,7 +239,7 @@ namespace FF4Bot
 
             #region Niedrige HP und auf der Weltkarte
 
-            if (ReadChar3HP() < HealThreshold && (InWorldMapFacingEast() || InWorldMapFacingNorth() || InWorldMapFacingSouth() || InWorldMapFacingWest()))
+            if (BelowMininumHP(2) && (InWorldMapFacingEast() || InWorldMapFacingNorth() || InWorldMapFacingSouth() || InWorldMapFacingWest()))
             {
                 OpenMenu();
                 return;
@@ -237,13 +250,31 @@ namespace FF4Bot
 
             #region Im Menü
 
-            if (InMenu())
+            if (InMenu() || StartMenuItemMenuFlagSet())
             {
                 Console.Out.WriteLine("Im Menü.");
-                
+
                 #region HP niedrig
 
-                if (ReadChar3HP() < StopHealThreshold)
+                if (BelowMininumMP(2))
+                {
+                    if (!InMenuItemSelected())
+                    {
+                        DirectionDown();
+                        return;
+                    }
+
+                    PressA();
+                    return;
+                }
+
+                if (StartMenuItemMenuFlagSet())
+                {
+                    PressA();
+                    return;
+                }
+
+                if (!AboveSafeHP(2))
                 {
                     Console.Out.WriteLine("Sollte heilen.");
 
@@ -270,15 +301,18 @@ namespace FF4Bot
                     #endregion
 
                     #region Menüpunkt "Magie" ausgewählt, noch kein Caster ausgewählt
+
                     if (!InMenuMagicSelectedChar3Selected())
                     {
                         Console.Out.WriteLine("Wähle Char3 als Caster aus.");
                         DirectionDown();
                         return;
                     }
+
                     #endregion
 
                     #region Char3 als Caster markiert
+
                     if (InMenuMagicSelectedChar3Selected() && !InMenuChoosingMagicTarget())
                     {
                         Console.Out.WriteLine("Bestätige Char3 als Caster.");
@@ -289,6 +323,7 @@ namespace FF4Bot
                     #endregion
 
                     #region Wähle Zauber-Ziel
+
                     if (InMenuChoosingMagicTarget())
                     {
                         Console.Out.WriteLine("Wähle Zauber-Ziel aus.");
@@ -299,7 +334,7 @@ namespace FF4Bot
                             return;
                         }
 
-                        if (ReadChar3HP() < StopHealThreshold)
+                        if (!AboveSafeHP(2) && !BelowMininumMP(2))
                         {
                             Console.Out.WriteLine("Heile Char3.");
                             PressA();
@@ -307,8 +342,8 @@ namespace FF4Bot
                             return;
                         }
                     }
+
                     #endregion
-                    
                 }
 
                 #endregion
@@ -321,10 +356,11 @@ namespace FF4Bot
             #endregion
 
             #region Im Magie-Menü
+
             if (InMenuMagicMenu())
             {
                 Console.Out.WriteLine("Bin im Magie-Menü.");
-                if (ReadChar3HP() >= StopHealThreshold)
+                if (AboveSafeHP(2) || BelowMininumMP(2))
                 {
                     Console.Out.WriteLine("Verlasse das Magie-Menü.");
                     PressB();
@@ -334,9 +370,10 @@ namespace FF4Bot
                     Console.Out.WriteLine("Drücke im Magie-Menü A.");
                     PressA();
                 }
-                
+
                 return;
             }
+
             #endregion
 
             #region Auf der Weltkarte, Blick Richtung Ost Nord oder Süd
@@ -361,15 +398,15 @@ namespace FF4Bot
 
             #region Im Kampf
 
-            if (InBattle())
+            if (BattleFlagSet())
             {
-                if (ReadChar3HP() < HealThreshold)
+                if (BelowMininumHP(2))
                 {
-                    Console.Out.WriteLine("Fliehe aus dem Kampf: {0} HP",ReadChar3HP());
+                    Console.Out.WriteLine("Fliehe aus dem Kampf: {0} HP", ReadChar3HP());
                     HoldLR();
                     return;
                 }
-                
+
                 PressA();
                 return;
             }
@@ -388,19 +425,108 @@ namespace FF4Bot
 
             #region Fallback: Weltkarte, aber anderer char als Cecil sichtbar
 
-            StopHoldingLR();
-            PressR();
+            if (ReadFieldDisplayedCharIndex() != 2)
+            {
+                StopHoldingLR();
+                PressR();
+                return;
+            }
+
             #endregion
+        }
+
+        #region Reading RAM
+
+        private static int ReadChar3MaxHP()
+        {
+            return Read(_process, _ptrChar3MaxHP);
         }
 
         private static int ReadChar3HP()
         {
-            return Read(_process, InBattle() ? _ptrChar3BattleHP : _ptrChar3FieldHP);
+            return Read(_process, BattleFlagSet() ? _ptrChar3BattleHP : _ptrChar3FieldHP);
         }
 
-        private static void ReadChar3MP()
+        private static int ReadChar3MP()
         {
-            
+            return Read(_process, BattleFlagSet() ? _ptrChar3BattleMP : _ptrChar3FieldMP);
+        }
+
+        private static int ReadFieldDisplayedCharIndex()
+        {
+            return Read(_process, _ptrFieldDisplayedCharIndex, 1);
+        }
+
+        private static int ReadBattleFlag()
+        {
+            return Read(_process, _ptrBattleFlag, 1);
+        }
+
+        private static bool BattleFlagSet()
+        {
+            int iBattleFlag = ReadBattleFlag();
+            return iBattleFlag == 255;
+        }
+
+        private static int ReadStartMenuItemMenuFlag()
+        {
+            return Read(_process, _ptrStartMenuItemMenuFlag, 1);
+        }
+
+        private static bool StartMenuItemMenuFlagSet()
+        {
+            int iItemMenuFlag = ReadStartMenuItemMenuFlag();
+            return iItemMenuFlag == 255;
+        }
+
+        private static int ReadStartMenuOptionCursorPosition()
+        {
+            return Read(_process, _ptrStartMenuOptionCursorPosition, 1);
+        }
+
+        private static bool InMenuMagicSelected()
+        {
+            return ReadStartMenuOptionCursorPosition() == 1;
+        }
+
+        private static bool InMenuItemSelected()
+        {
+            return ReadStartMenuOptionCursorPosition() == 0;
+        }
+
+        #endregion
+
+        private static bool BelowMininumHP(int iChar)
+        {
+            switch (iChar)
+            {
+                case 2:
+                    return ReadChar3HP() < (ReadChar3MaxHP()*0.2);
+            }
+
+            return false;
+        }
+
+        private static bool BelowMininumMP(int iChar)
+        {
+            switch (iChar)
+            {
+                case 2:
+                    return ReadChar3MP() < 3;
+            }
+
+            return false;
+        }
+
+        private static bool AboveSafeHP(int iChar)
+        {
+            switch (iChar)
+            {
+                case 2:
+                    return ReadChar3HP() > (ReadChar3MaxHP()*0.9);
+            }
+
+            return false;
         }
 
         private static Dictionary<String, String> GetConfig()
@@ -439,11 +565,6 @@ namespace FF4Bot
         private static bool InMenu()
         {
             return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.StartMenu, 160, 166);
-        }
-
-        private static bool InMenuMagicSelected()
-        {
-            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.SelectionHand, 164, 67);
         }
 
         private static bool InMenuMagicSelectedChoosingCharacter()
@@ -510,11 +631,6 @@ namespace FF4Bot
             return true;
         }
 
-        private static bool InBattle()
-        {
-            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.BattleScreen, 241, 163);
-        }
-
         private static bool InBattleLootScreen()
         {
             return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.BattleLootScreen, 89, 126);
@@ -554,11 +670,6 @@ namespace FF4Bot
         private static void DirectionDown()
         {
             LongPressKey(_kdown);
-        }
-
-        private static void DirectionUp()
-        {
-            LongPressKey(_kup);
         }
 
         private static void PressB()
