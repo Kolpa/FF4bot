@@ -51,8 +51,10 @@ namespace FF4Bot
         [DllImport("kernel32.dll")]
         private static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, ref uint lpNumberOfBytesWritten);
 
+/*
         [DllImport("kernel32.dll")]
         private static extern bool CloseHandle(IntPtr hObject);
+*/
 
         #endregion
 
@@ -63,10 +65,12 @@ namespace FF4Bot
             return OpenProcess(0x1F0FFF, true, id);
         }
 
+/*
         private static bool Close(IntPtr handle)
         {
             return CloseHandle(handle);
         }
+*/
 
         private static int Read(IntPtr process, IntPtr adress, int iBytesToRead = 2)
         {
@@ -138,6 +142,13 @@ namespace FF4Bot
         private static IntPtr _ptrBattleFlag;
         private static IntPtr _ptrStartMenuItemMenuFlag;
         private static IntPtr _ptrStartMenuOptionCursorPosition;
+        private static IntPtr _ptrStartMenuMagicTargetCursorPosition;
+        private static IntPtr _ptrItemSlot0ItemType;
+        private static IntPtr _ptrStartMenuItemMenuCursorRow;
+        private static IntPtr _ptrStartMenuItemMenuCursorCol;
+
+
+        private const int ItemCodeTent = 0xE2;
 
         private static void Main()
         {
@@ -158,6 +169,10 @@ namespace FF4Bot
             IntPtr ptrBattleFlagNoOffset = game.MainModule.BaseAddress + 0x41E380;
             IntPtr ptrStartMenuItemMenuNoOffset = game.MainModule.BaseAddress + 0x41E3A0;
             IntPtr ptrStartMenuOptionCursorPositionNoOffset = game.MainModule.BaseAddress + 0x41E380;
+            IntPtr ptrStartMenuMagicTargetCursorPositionNoOffset = game.MainModule.BaseAddress + 0x41E380;
+            IntPtr ptrItemSlot0ItemTypeNoOffset = game.MainModule.BaseAddress + 0x41E380;
+            IntPtr ptrStartMenuItemMenuCursorRowNoOffset = game.MainModule.BaseAddress + 0x41E380;
+            IntPtr ptrStartMenuItemMenuCursorColNoOffset = game.MainModule.BaseAddress + 0x41E380;
 
             _ptrChar3MaxHP = GetAdress(_process, ptrChar3MaxHPNoOffset, 0x607A);
             _ptrChar3FieldHP = GetAdress(_process, ptrChar3FieldHPNoOffset, 0x6078);
@@ -168,6 +183,10 @@ namespace FF4Bot
             _ptrBattleFlag = GetAdress(_process, ptrBattleFlagNoOffset, 0x2E);
             _ptrStartMenuItemMenuFlag = GetAdress(_process, ptrStartMenuItemMenuNoOffset, 0x59FE);
             _ptrStartMenuOptionCursorPosition = GetAdress(_process, ptrStartMenuOptionCursorPositionNoOffset, 0x22C6A);
+            _ptrStartMenuMagicTargetCursorPosition = GetAdress(_process, ptrStartMenuMagicTargetCursorPositionNoOffset, 0x300A0);
+            _ptrItemSlot0ItemType = GetAdress(_process, ptrItemSlot0ItemTypeNoOffset, 0x6564);
+            _ptrStartMenuItemMenuCursorRow = GetAdress(_process, ptrStartMenuItemMenuCursorRowNoOffset, 0x3009E);
+            _ptrStartMenuItemMenuCursorCol = GetAdress(_process, ptrStartMenuItemMenuCursorColNoOffset, 0x3009C);
 
             GetCodes(keys, config);
             Timer.AutoReset = true;
@@ -254,25 +273,80 @@ namespace FF4Bot
             {
                 Console.Out.WriteLine("Im Menü.");
 
-                #region HP niedrig
+                #region MP niedrig
 
-                if (BelowMininumMP(2))
+                if (StartMenuItemMenuFlagSet())
                 {
-                    if (!InMenuItemSelected())
+                    Console.Out.WriteLine("Bin im Item-Menü.");
+
+                    bool bTentsFound = false;
+                    int iTentItemSlot = 0;
+
+                    for (int i = 0; i < 48; i++)
                     {
+                        if (ReadItemCodeInItemSlot(i) != ItemCodeTent) continue;
+                        bTentsFound = true;
+                        iTentItemSlot = i;
+                        break;
+                    }
+
+                    if (!bTentsFound)
+                    {
+                        Console.Out.WriteLine("Keine Zelte gefunden. Ich speichere und geh dann sterben.");
+                        QuicksaveGame();
+                        Timer.Stop();
+                        return;
+                    }
+                    Console.Out.WriteLine("Ich hab noch Zelte!.");
+
+                    if (ReadItemCursorPosition() == iTentItemSlot)
+                    {
+                        Console.Out.WriteLine("Cursor ist auf Zelten! Benutze eins.");
+                        PressA();
+                        return;
+                    }
+
+                    if ((ReadItemMenuCursorCol() == 0 && iTentItemSlot%2 != 0) || (ReadItemMenuCursorCol() == 1 && iTentItemSlot%2 == 0))
+                    {
+                        if (ReadItemMenuCursorRow() == 23) DirectionLeft();
+                        else DirectionRight();
+                        Console.Out.WriteLine("Cursor ist in der falschen Spalte! Wechsle Spalte.");
+                        return;
+                    }
+
+                    if (ReadItemMenuCursorRow() < iTentItemSlot/2)
+                    {
+                        Console.Out.WriteLine("Cursor ist in der falschen Zeile! Gehe nach unten.");
                         DirectionDown();
                         return;
                     }
 
+                    if (ReadItemMenuCursorRow() > iTentItemSlot/2)
+                    {
+                        Console.Out.WriteLine("Cursor ist in der falschen Zeile! Gehe nach oben.");
+                        DirectionUp();
+                        return;
+                    }
+                }
+
+                if (BelowMinimumMP(2))
+                {
+                    Console.Out.WriteLine("Bin OOM.");
+                    if (!InMenuItemSelected())
+                    {
+                        Console.Out.WriteLine("Bewege Cursor auf 'Item' im Menü .");
+                        DirectionDown();
+                        return;
+                    }
+
+                    Console.Out.WriteLine("Wähle 'Item' im Menü aus.");
                     PressA();
                     return;
                 }
 
-                if (StartMenuItemMenuFlagSet())
-                {
-                    PressA();
-                    return;
-                }
+                #endregion
+
+                #region HP niedrig
 
                 if (!AboveSafeHP(2))
                 {
@@ -291,7 +365,7 @@ namespace FF4Bot
 
                     #region Cursor auf Menüpunkt "Magie", aber noch nicht angeklickt
 
-                    if (InMenuMagicSelected() && !InMenuMagicSelectedChoosingCharacter())
+                    if (InMenuMagicSelected() && !InMenuMagicSelectedChoosingCharacter() && !InMenuChoosingMagicTarget())
                     {
                         Console.Out.WriteLine("Cursor ist auf 'Magie', drücke A.");
                         PressA();
@@ -302,7 +376,7 @@ namespace FF4Bot
 
                     #region Menüpunkt "Magie" ausgewählt, noch kein Caster ausgewählt
 
-                    if (!InMenuMagicSelectedChar3Selected())
+                    if (!InMenuMagicSelectedChar3Selected() && !InMenuChoosingMagicTarget())
                     {
                         Console.Out.WriteLine("Wähle Char3 als Caster aus.");
                         DirectionDown();
@@ -334,7 +408,7 @@ namespace FF4Bot
                             return;
                         }
 
-                        if (!AboveSafeHP(2) && !BelowMininumMP(2))
+                        if (!AboveSafeHP(2) && !BelowMinimumMP(2))
                         {
                             Console.Out.WriteLine("Heile Char3.");
                             PressA();
@@ -360,7 +434,7 @@ namespace FF4Bot
             if (InMenuMagicMenu())
             {
                 Console.Out.WriteLine("Bin im Magie-Menü.");
-                if (AboveSafeHP(2) || BelowMininumMP(2))
+                if (AboveSafeHP(2) || BelowMinimumMP(2))
                 {
                     Console.Out.WriteLine("Verlasse das Magie-Menü.");
                     PressB();
@@ -425,14 +499,19 @@ namespace FF4Bot
 
             #region Fallback: Weltkarte, aber anderer char als Cecil sichtbar
 
-            if (ReadFieldDisplayedCharIndex() != 2)
-            {
-                StopHoldingLR();
-                PressR();
-                return;
-            }
+            if (ReadFieldDisplayedCharIndex() == 2) return;
+            StopHoldingLR();
+            PressR();
 
             #endregion
+        }
+
+        private static void QuicksaveGame()
+        {
+            InputSimulator.SimulateKeyDown(VirtualKeyCode.LSHIFT);
+            Thread.Sleep(100);
+            LongPressKey(VirtualKeyCode.F10);
+            InputSimulator.SimulateKeyUp(VirtualKeyCode.LSHIFT);
         }
 
         #region Reading RAM
@@ -484,14 +563,44 @@ namespace FF4Bot
             return Read(_process, _ptrStartMenuOptionCursorPosition, 1);
         }
 
-        private static bool InMenuMagicSelected()
+        private static int ReadStartMenuMagicTargetCursorPosition()
         {
-            return ReadStartMenuOptionCursorPosition() == 1;
+            return Read(_process, _ptrStartMenuMagicTargetCursorPosition, 1);
         }
 
         private static bool InMenuItemSelected()
         {
             return ReadStartMenuOptionCursorPosition() == 0;
+        }
+
+        private static bool InMenuMagicSelected()
+        {
+            return ReadStartMenuOptionCursorPosition() == 1;
+        }
+
+        private static bool InMenuMagicSelectedChar3Selected()
+        {
+            return ReadStartMenuMagicTargetCursorPosition() == 2;
+        }
+
+        private static int ReadItemCodeInItemSlot(int iSlot)
+        {
+            return Read(_process, _ptrItemSlot0ItemType + (iSlot*0x4), 1);
+        }
+
+        private static int ReadItemMenuCursorRow()
+        {
+            return Read(_process, _ptrStartMenuItemMenuCursorRow, 1);
+        }
+
+        private static int ReadItemMenuCursorCol()
+        {
+            return Read(_process, _ptrStartMenuItemMenuCursorCol, 1);
+        }
+
+        private static int ReadItemCursorPosition()
+        {
+            return (2*ReadItemMenuCursorRow()) + ReadItemMenuCursorCol();
         }
 
         #endregion
@@ -507,7 +616,7 @@ namespace FF4Bot
             return false;
         }
 
-        private static bool BelowMininumMP(int iChar)
+        private static bool BelowMinimumMP(int iChar)
         {
             switch (iChar)
             {
@@ -570,11 +679,6 @@ namespace FF4Bot
         private static bool InMenuMagicSelectedChoosingCharacter()
         {
             return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.SelectionHandFaded, 164, 67);
-        }
-
-        private static bool InMenuMagicSelectedChar3Selected()
-        {
-            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.SelectionHand, 12, 127);
         }
 
         private static bool InMenuMagicMenu()
@@ -670,6 +774,11 @@ namespace FF4Bot
         private static void DirectionDown()
         {
             LongPressKey(_kdown);
+        }
+
+        private static void DirectionUp()
+        {
+            LongPressKey(_kup);
         }
 
         private static void PressB()
