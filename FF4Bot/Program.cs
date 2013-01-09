@@ -51,10 +51,8 @@ namespace FF4Bot
         [DllImport("kernel32.dll")]
         private static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, ref uint lpNumberOfBytesWritten);
 
-/*
         [DllImport("kernel32.dll")]
         private static extern bool CloseHandle(IntPtr hObject);
-*/
 
         #endregion
 
@@ -65,12 +63,10 @@ namespace FF4Bot
             return OpenProcess(0x1F0FFF, true, id);
         }
 
-/*
         private static bool Close(IntPtr handle)
         {
             return CloseHandle(handle);
         }
-*/
 
         private static int Read(IntPtr process, IntPtr adress, int iBytesToRead = 2)
         {
@@ -294,6 +290,7 @@ namespace FF4Bot
                     {
                         Console.Out.WriteLine("Keine Zelte gefunden. Ich speichere und geh dann sterben.");
                         QuicksaveGame();
+                        Close(_process);
                         Timer.Stop();
                         return;
                     }
