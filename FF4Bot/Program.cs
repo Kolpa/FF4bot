@@ -63,9 +63,9 @@ namespace FF4Bot
             return OpenProcess(0x1F0FFF, true, id);
         }
 
-        private static bool Close(IntPtr handle)
+        private static void Close(IntPtr handle)
         {
-            return CloseHandle(handle);
+            CloseHandle(handle);
         }
 
         private static int Read(IntPtr process, IntPtr adress, int iBytesToRead = 2)
@@ -89,12 +89,34 @@ namespace FF4Bot
 
         #endregion
 
+        #region Private Properties
+
         private static readonly Timer Timer = new Timer(100);
         private static Rectangle _bounds;
         private static IntPtr _activeWindowHandle;
         private static Bitmap _bitmap;
         private static readonly Object LockObject = new object();
         private static readonly Bitmap Spritesheet = new Bitmap("spritesheet.png");
+
+        #endregion
+
+        #region Enums
+
+        private enum Direction
+        {
+            Up,
+            Right,
+            Down,
+            Left
+        }
+
+        private enum StartMenuOption
+        {
+            Item,
+            Magic
+        }
+
+        #endregion
 
         #region Spritesheet definitions
 
@@ -128,6 +150,8 @@ namespace FF4Bot
 
         #endregion
 
+        #region Pointers
+
         private static IntPtr _process;
         private static IntPtr _ptrChar3MaxHP;
         private static IntPtr _ptrChar3FieldHP;
@@ -142,9 +166,15 @@ namespace FF4Bot
         private static IntPtr _ptrItemSlot0ItemType;
         private static IntPtr _ptrStartMenuItemMenuCursorRow;
         private static IntPtr _ptrStartMenuItemMenuCursorCol;
+        private static IntPtr _ptrLookDirection;
 
+        #endregion
+
+        #region Fixed Codes and Offsets
 
         private const int ItemCodeTent = 0xE2;
+
+        #endregion
 
         private static void Main()
         {
@@ -169,6 +199,7 @@ namespace FF4Bot
             IntPtr ptrItemSlot0ItemTypeNoOffset = game.MainModule.BaseAddress + 0x41E380;
             IntPtr ptrStartMenuItemMenuCursorRowNoOffset = game.MainModule.BaseAddress + 0x41E380;
             IntPtr ptrStartMenuItemMenuCursorColNoOffset = game.MainModule.BaseAddress + 0x41E380;
+            IntPtr ptrLookDirectionNoOffset = game.MainModule.BaseAddress + 0x41E380;
 
             _ptrChar3MaxHP = GetAdress(_process, ptrChar3MaxHPNoOffset, 0x607A);
             _ptrChar3FieldHP = GetAdress(_process, ptrChar3FieldHPNoOffset, 0x6078);
@@ -183,6 +214,7 @@ namespace FF4Bot
             _ptrItemSlot0ItemType = GetAdress(_process, ptrItemSlot0ItemTypeNoOffset, 0x6564);
             _ptrStartMenuItemMenuCursorRow = GetAdress(_process, ptrStartMenuItemMenuCursorRowNoOffset, 0x3009E);
             _ptrStartMenuItemMenuCursorCol = GetAdress(_process, ptrStartMenuItemMenuCursorColNoOffset, 0x3009C);
+            _ptrLookDirection = GetAdress(_process, ptrLookDirectionNoOffset, 0xDA90);
 
             GetCodes(keys, config);
             Timer.AutoReset = true;
@@ -191,45 +223,6 @@ namespace FF4Bot
 
             while (Timer.Enabled)
             {
-            }
-        }
-
-        private static void GetCodes(IDictionary<int, VirtualKeyCode> keys, IDictionary<string, string> config)
-        {
-            Int32 tup = Convert.ToInt32(config["Joy1_Up"]);
-            Int32 tdown = Convert.ToInt32(config["Joy1_Down"]);
-            Int32 tleft = Convert.ToInt32(config["Joy1_Left"]);
-            Int32 tright = Convert.ToInt32(config["Joy1_Right"]);
-            Int32 ta = Convert.ToInt32(config["Joy1_A"]);
-            Int32 tb = Convert.ToInt32(config["Joy1_B"]);
-            Int32 tl = Convert.ToInt32(config["Joy1_L"]);
-            Int32 tr = Convert.ToInt32(config["Joy1_R"]);
-            Int32 tsta = Convert.ToInt32(config["Joy1_Start"]);
-            Int32 tspeed = Convert.ToInt32(config["Joy1_Speed"]);
-
-            _kup = keys[tup];
-            _kdown = keys[tdown];
-            _kleft = keys[tleft];
-            _kright = keys[tright];
-            _ka = keys[ta];
-            _kb = keys[tb];
-            _kl = keys[tl];
-            _kr = keys[tr];
-            _kstart = keys[tsta];
-            _kspeed = keys[tspeed];
-        }
-
-        private static Bitmap GetSpritesheetSprite(SpritesheetSprite sprite)
-        {
-            return Spritesheet.Clone(SpritesheetSpriteRectangles[sprite], Spritesheet.PixelFormat);
-        }
-
-        private static void TimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
-        {
-            lock (LockObject)
-            {
-                Console.Out.WriteLine("===========================================");
-                MainLoop();
             }
         }
 
@@ -250,18 +243,9 @@ namespace FF4Bot
 
         private static void InterpretScreenshot()
         {
+            Console.Out.WriteLine("Starte Interpretation der Situation.");
+
             HoldTurboButton();
-
-            #region Niedrige HP und auf der Weltkarte
-
-            if (BelowMininumHP(2) && (InWorldMapFacingEast() || InWorldMapFacingNorth() || InWorldMapFacingSouth() || InWorldMapFacingWest()))
-            {
-                OpenMenu();
-                return;
-            }
-            Console.Out.WriteLine("HP: {0}", ReadChar3HP());
-
-            #endregion
 
             #region Im Menü
 
@@ -329,7 +313,7 @@ namespace FF4Bot
                 if (BelowMinimumMP(2))
                 {
                     Console.Out.WriteLine("Bin OOM.");
-                    if (!InMenuItemSelected())
+                    if (GetSelectedStartMenuOption() != StartMenuOption.Item)
                     {
                         Console.Out.WriteLine("Bewege Cursor auf 'Item' im Menü .");
                         DirectionDown();
@@ -351,7 +335,7 @@ namespace FF4Bot
 
                     #region Cursor nicht auf Menüpunkt "Magie"
 
-                    if (!InMenuMagicSelected() && !InMenuMagicSelectedChoosingCharacter() && !InMenuChoosingMagicTarget())
+                    if (GetSelectedStartMenuOption() != StartMenuOption.Magic && !InMenuMagicSelectedChoosingCharacter() && !InMenuChoosingMagicTarget())
                     {
                         Console.Out.WriteLine("Bewege Cursor auf 'Magie'");
                         DirectionDown();
@@ -362,7 +346,7 @@ namespace FF4Bot
 
                     #region Cursor auf Menüpunkt "Magie", aber noch nicht angeklickt
 
-                    if (InMenuMagicSelected() && !InMenuMagicSelectedChoosingCharacter() && !InMenuChoosingMagicTarget())
+                    if (GetSelectedStartMenuOption() == StartMenuOption.Magic && !InMenuMagicSelectedChoosingCharacter() && !InMenuChoosingMagicTarget())
                     {
                         Console.Out.WriteLine("Cursor ist auf 'Magie', drücke A.");
                         PressA();
@@ -447,26 +431,6 @@ namespace FF4Bot
 
             #endregion
 
-            #region Auf der Weltkarte, Blick Richtung Ost Nord oder Süd
-
-            if (InWorldMapFacingEast() || InWorldMapFacingNorth() || InWorldMapFacingSouth())
-            {
-                DirectionLeft();
-                return;
-            }
-
-            #endregion
-
-            #region Auf der Weltkarte, Blick Richtung West
-
-            if (InWorldMapFacingWest())
-            {
-                DirectionRight();
-                return;
-            }
-
-            #endregion
-
             #region Im Kampf
 
             if (BattleFlagSet())
@@ -494,11 +458,35 @@ namespace FF4Bot
 
             #endregion
 
-            #region Fallback: Weltkarte, aber anderer char als Cecil sichtbar
+            #region Niedrige HP und auf der Weltkarte
 
-            if (ReadFieldDisplayedCharIndex() == 2) return;
+            if (BelowMininumHP(2) && !InMenu())
+            {
+                Console.Out.WriteLine("Bin auf der Weltkarte und hab wenig Leben. Öffne Menü.");
+                OpenMenu();
+                return;
+            }
+
+            #endregion
+
+            #region Ab hier nach Ausschlussprinzip Weltkarte
             StopHoldingLR();
-            PressR();
+            #endregion
+
+            #region Weltkarte, aber anderer char als Cecil sichtbar
+
+            if (ReadFieldDisplayedCharIndex() != 2)
+            {
+                PressR();
+                return;
+            }
+
+            #endregion
+
+            #region Hin und her laufen
+
+            if (GetLookDirection() == Direction.Right) DirectionLeft();
+            else DirectionRight();
 
             #endregion
         }
@@ -509,6 +497,76 @@ namespace FF4Bot
             Thread.Sleep(100);
             LongPressKey(VirtualKeyCode.F10);
             InputSimulator.SimulateKeyUp(VirtualKeyCode.LSHIFT);
+        }
+
+        private static Dictionary<String, String> GetConfig()
+        {
+            return File.ReadAllLines(EmulatorFolder + "\\vba.ini").Where(row => row.Contains("=")).ToDictionary(row => row.Split('=')[0], row => row.Split('=')[1]);
+        }
+
+        private static void TakeScreenshot()
+        {
+            GetWindowRect(_activeWindowHandle, out _bounds);
+            _bounds.Width -= _bounds.Left;
+            _bounds.Height -= _bounds.Top;
+            _bitmap = new Bitmap(_bounds.Width, _bounds.Height);
+
+            using (Graphics g = Graphics.FromImage(_bitmap))
+            {
+                g.CopyFromScreen(new Point(_bounds.Left, _bounds.Top), Point.Empty, _bounds.Size);
+            }
+        }
+
+        private static bool EmulatorHasFocus()
+        {
+            return GetFocusProcess().ProcessName == EmulatorProcessName;
+        }
+
+        private static Process GetFocusProcess()
+        {
+            int iFocusWindowProcessID;
+            GetWindowThreadProcessId(_activeWindowHandle, out iFocusWindowProcessID);
+            Process focusProcess = Process.GetProcessById(iFocusWindowProcessID);
+            return focusProcess;
+        }
+
+        private static void GetCodes(IDictionary<int, VirtualKeyCode> keys, IDictionary<string, string> config)
+        {
+            Int32 tup = Convert.ToInt32(config["Joy1_Up"]);
+            Int32 tdown = Convert.ToInt32(config["Joy1_Down"]);
+            Int32 tleft = Convert.ToInt32(config["Joy1_Left"]);
+            Int32 tright = Convert.ToInt32(config["Joy1_Right"]);
+            Int32 ta = Convert.ToInt32(config["Joy1_A"]);
+            Int32 tb = Convert.ToInt32(config["Joy1_B"]);
+            Int32 tl = Convert.ToInt32(config["Joy1_L"]);
+            Int32 tr = Convert.ToInt32(config["Joy1_R"]);
+            Int32 tsta = Convert.ToInt32(config["Joy1_Start"]);
+            Int32 tspeed = Convert.ToInt32(config["Joy1_Speed"]);
+
+            _kup = keys[tup];
+            _kdown = keys[tdown];
+            _kleft = keys[tleft];
+            _kright = keys[tright];
+            _ka = keys[ta];
+            _kb = keys[tb];
+            _kl = keys[tl];
+            _kr = keys[tr];
+            _kstart = keys[tsta];
+            _kspeed = keys[tspeed];
+        }
+
+        private static Bitmap GetSpritesheetSprite(SpritesheetSprite sprite)
+        {
+            return Spritesheet.Clone(SpritesheetSpriteRectangles[sprite], Spritesheet.PixelFormat);
+        }
+
+        private static void TimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
+        {
+            lock (LockObject)
+            {
+                Console.Out.WriteLine("===========================================");
+                MainLoop();
+            }
         }
 
         #region Reading RAM
@@ -538,21 +596,9 @@ namespace FF4Bot
             return Read(_process, _ptrBattleFlag, 1);
         }
 
-        private static bool BattleFlagSet()
-        {
-            int iBattleFlag = ReadBattleFlag();
-            return iBattleFlag == 255;
-        }
-
         private static int ReadStartMenuItemMenuFlag()
         {
             return Read(_process, _ptrStartMenuItemMenuFlag, 1);
-        }
-
-        private static bool StartMenuItemMenuFlagSet()
-        {
-            int iItemMenuFlag = ReadStartMenuItemMenuFlag();
-            return iItemMenuFlag == 255;
         }
 
         private static int ReadStartMenuOptionCursorPosition()
@@ -563,21 +609,6 @@ namespace FF4Bot
         private static int ReadStartMenuMagicTargetCursorPosition()
         {
             return Read(_process, _ptrStartMenuMagicTargetCursorPosition, 1);
-        }
-
-        private static bool InMenuItemSelected()
-        {
-            return ReadStartMenuOptionCursorPosition() == 0;
-        }
-
-        private static bool InMenuMagicSelected()
-        {
-            return ReadStartMenuOptionCursorPosition() == 1;
-        }
-
-        private static bool InMenuMagicSelectedChar3Selected()
-        {
-            return ReadStartMenuMagicTargetCursorPosition() == 2;
         }
 
         private static int ReadItemCodeInItemSlot(int iSlot)
@@ -600,7 +631,14 @@ namespace FF4Bot
             return (2*ReadItemMenuCursorRow()) + ReadItemMenuCursorCol();
         }
 
+        private static int ReadLookDirection()
+        {
+            return Read(_process, _ptrLookDirection, 1);
+        }
+
         #endregion
+
+        #region Infos from Reading RAM
 
         private static bool BelowMininumHP(int iChar)
         {
@@ -635,36 +673,52 @@ namespace FF4Bot
             return false;
         }
 
-        private static Dictionary<String, String> GetConfig()
+        private static bool BattleFlagSet()
         {
-            return File.ReadAllLines(EmulatorFolder + "\\vba.ini").Where(row => row.Contains("=")).ToDictionary(row => row.Split('=')[0], row => row.Split('=')[1]);
+            int iBattleFlag = ReadBattleFlag();
+            return iBattleFlag == 255;
         }
 
-        private static void TakeScreenshot()
+        private static bool StartMenuItemMenuFlagSet()
         {
-            GetWindowRect(_activeWindowHandle, out _bounds);
-            _bounds.Width -= _bounds.Left;
-            _bounds.Height -= _bounds.Top;
-            _bitmap = new Bitmap(_bounds.Width, _bounds.Height);
+            return ReadStartMenuItemMenuFlag() == 255;
+        }
 
-            using (Graphics g = Graphics.FromImage(_bitmap))
+        private static bool InMenuMagicSelectedChar3Selected()
+        {
+            return ReadStartMenuMagicTargetCursorPosition() == 2;
+        }
+
+        private static StartMenuOption? GetSelectedStartMenuOption()
+        {
+            switch (ReadStartMenuOptionCursorPosition())
             {
-                g.CopyFromScreen(new Point(_bounds.Left, _bounds.Top), Point.Empty, _bounds.Size);
+                case 0:
+                    return StartMenuOption.Item;
+                case 1:
+                    return StartMenuOption.Magic;
+                default:
+                    return null;
             }
         }
 
-        private static bool EmulatorHasFocus()
+        private static Direction GetLookDirection()
         {
-            return GetFocusProcess().ProcessName == EmulatorProcessName;
+            int iDirectionCode = ReadLookDirection();
+            switch (iDirectionCode)
+            {
+                default:
+                    return Direction.Up;
+                case 2:
+                    return Direction.Right;
+                case 4:
+                    return Direction.Down;
+                case 6:
+                    return Direction.Left;
+            }
         }
 
-        private static Process GetFocusProcess()
-        {
-            int iFocusWindowProcessID;
-            GetWindowThreadProcessId(_activeWindowHandle, out iFocusWindowProcessID);
-            Process focusProcess = Process.GetProcessById(iFocusWindowProcessID);
-            return focusProcess;
-        }
+        #endregion
 
         #region CoordChecks
 
@@ -686,26 +740,6 @@ namespace FF4Bot
         private static bool InMenuChoosingMagicTarget()
         {
             return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.StartMenuChoosingMagicTarget, 170, 178);
-        }
-
-        private static bool InWorldMapFacingEast()
-        {
-            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilEast, 128, 124);
-        }
-
-        private static bool InWorldMapFacingWest()
-        {
-            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilWest, 122, 124);
-        }
-
-        private static bool InWorldMapFacingNorth()
-        {
-            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilNorth, 125, 122);
-        }
-
-        private static bool InWorldMapFacingSouth()
-        {
-            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.WorldmapCecilSouth, 125, 125);
         }
 
         private static bool SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite sprite, int x, int y)
