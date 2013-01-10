@@ -153,6 +153,7 @@ namespace FF4Bot
         #region Pointers
 
         private static IntPtr _process;
+        private static IntPtr _ptrGameMainModuleBaseAddress;
         private static IntPtr _ptrChar3MaxHP;
         private static IntPtr _ptrChar3FieldHP;
         private static IntPtr _ptrChar3FieldMP;
@@ -185,36 +186,22 @@ namespace FF4Bot
 
             Process game = Process.GetProcessesByName(EmulatorProcessName)[0];
             _process = Open(game.Id);
+            _ptrGameMainModuleBaseAddress = game.MainModule.BaseAddress;
 
-            IntPtr ptrChar3MaxHPNoOffset = game.MainModule.BaseAddress + 0x41E380;
-            IntPtr ptrChar3FieldHPNoOffset = game.MainModule.BaseAddress + 0x41E380;
-            IntPtr ptrChar3FieldMPNoOffset = game.MainModule.BaseAddress + 0x41E380;
-            IntPtr ptrChar3BattleHPNoOffset = game.MainModule.BaseAddress + 0x4EB8F8;
-            IntPtr ptrChar3BattleMPNoOffset = game.MainModule.BaseAddress + 0x4EB8F8;
-            IntPtr ptrFieldDisplayedCharIndexNoOffset = game.MainModule.BaseAddress + 0x41E380;
-            IntPtr ptrBattleFlagNoOffset = game.MainModule.BaseAddress + 0x41E380;
-            IntPtr ptrStartMenuItemMenuNoOffset = game.MainModule.BaseAddress + 0x41E3A0;
-            IntPtr ptrStartMenuOptionCursorPositionNoOffset = game.MainModule.BaseAddress + 0x41E380;
-            IntPtr ptrStartMenuMagicTargetCursorPositionNoOffset = game.MainModule.BaseAddress + 0x41E380;
-            IntPtr ptrItemSlot0ItemTypeNoOffset = game.MainModule.BaseAddress + 0x41E380;
-            IntPtr ptrStartMenuItemMenuCursorRowNoOffset = game.MainModule.BaseAddress + 0x41E380;
-            IntPtr ptrStartMenuItemMenuCursorColNoOffset = game.MainModule.BaseAddress + 0x41E380;
-            IntPtr ptrLookDirectionNoOffset = game.MainModule.BaseAddress + 0x41E380;
-
-            _ptrChar3MaxHP = GetAdress(_process, ptrChar3MaxHPNoOffset, 0x607A);
-            _ptrChar3FieldHP = GetAdress(_process, ptrChar3FieldHPNoOffset, 0x6078);
-            _ptrChar3FieldMP = GetAdress(_process, ptrChar3FieldMPNoOffset, 0x607C);
-            _ptrChar3BattleHP = GetAdress(_process, ptrChar3BattleHPNoOffset, 0x242C8);
-            _ptrChar3BattleMP = GetAdress(_process, ptrChar3BattleMPNoOffset, 0x242CC);
-            _ptrFieldDisplayedCharIndex = GetAdress(_process, ptrFieldDisplayedCharIndexNoOffset, 0x6440);
-            _ptrBattleFlag = GetAdress(_process, ptrBattleFlagNoOffset, 0x2E);
-            _ptrStartMenuItemMenuFlag = GetAdress(_process, ptrStartMenuItemMenuNoOffset, 0x59FE);
-            _ptrStartMenuOptionCursorPosition = GetAdress(_process, ptrStartMenuOptionCursorPositionNoOffset, 0x22C6A);
-            _ptrStartMenuMagicTargetCursorPosition = GetAdress(_process, ptrStartMenuMagicTargetCursorPositionNoOffset, 0x300A0);
-            _ptrItemSlot0ItemType = GetAdress(_process, ptrItemSlot0ItemTypeNoOffset, 0x6564);
-            _ptrStartMenuItemMenuCursorRow = GetAdress(_process, ptrStartMenuItemMenuCursorRowNoOffset, 0x3009E);
-            _ptrStartMenuItemMenuCursorCol = GetAdress(_process, ptrStartMenuItemMenuCursorColNoOffset, 0x3009C);
-            _ptrLookDirection = GetAdress(_process, ptrLookDirectionNoOffset, 0xDA90);
+            _ptrChar3MaxHP = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x607A);
+            _ptrChar3FieldHP = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x6078);
+            _ptrChar3FieldMP = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x607C);
+            _ptrChar3BattleHP = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x4EB8F8, 0x242C8);
+            _ptrChar3BattleMP = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x4EB8F8, 0x242CC);
+            _ptrFieldDisplayedCharIndex = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x6440);
+            _ptrBattleFlag = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x2E);
+            _ptrStartMenuItemMenuFlag = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E3A0, 0x59FE);
+            _ptrStartMenuOptionCursorPosition = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x22C6A);
+            _ptrStartMenuMagicTargetCursorPosition = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x300A0);
+            _ptrItemSlot0ItemType = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x6564);
+            _ptrStartMenuItemMenuCursorRow = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x3009E);
+            _ptrStartMenuItemMenuCursorCol = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x3009C);
+            _ptrLookDirection = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0xDA90);
 
             GetCodes(keys, config);
             Timer.AutoReset = true;
@@ -470,7 +457,9 @@ namespace FF4Bot
             #endregion
 
             #region Ab hier nach Ausschlussprinzip Weltkarte
+
             StopHoldingLR();
+
             #endregion
 
             #region Weltkarte, aber anderer char als Cecil sichtbar
@@ -491,6 +480,7 @@ namespace FF4Bot
             #endregion
         }
 
+        #region Unsorted Methods
         private static void QuicksaveGame()
         {
             InputSimulator.SimulateKeyDown(VirtualKeyCode.LSHIFT);
@@ -568,6 +558,7 @@ namespace FF4Bot
                 MainLoop();
             }
         }
+        #endregion
 
         #region Reading RAM
 
