@@ -122,11 +122,6 @@ namespace FF4Bot
 
         private enum SpritesheetSprite
         {
-            WorldmapCecilSouth,
-            WorldmapCecilEast,
-            WorldmapCecilWest,
-            WorldmapCecilNorth,
-            StartMenu,
             BattleLootScreen,
             SelectionHand,
             SelectionHandFaded,
@@ -136,11 +131,6 @@ namespace FF4Bot
 
         private static readonly Dictionary<SpritesheetSprite, Rectangle> SpritesheetSpriteRectangles = new Dictionary<SpritesheetSprite, Rectangle>
                                                                                                            {
-                                                                                                               {SpritesheetSprite.WorldmapCecilSouth, new Rectangle(1, 1, 6, 5)},
-                                                                                                               {SpritesheetSprite.WorldmapCecilEast, new Rectangle(8, 1, 6, 5)},
-                                                                                                               {SpritesheetSprite.WorldmapCecilWest, new Rectangle(15, 1, 6, 5)},
-                                                                                                               {SpritesheetSprite.WorldmapCecilNorth, new Rectangle(22, 1, 6, 5)},
-                                                                                                               {SpritesheetSprite.StartMenu, new Rectangle(1, 7, 6, 5)},
                                                                                                                {SpritesheetSprite.BattleLootScreen, new Rectangle(8, 13, 6, 5)},
                                                                                                                {SpritesheetSprite.SelectionHand, new Rectangle(1, 19, 6, 5)},
                                                                                                                {SpritesheetSprite.SelectionHandFaded, new Rectangle(8, 19, 6, 5)},
@@ -161,6 +151,7 @@ namespace FF4Bot
         private static IntPtr _ptrChar3BattleMP;
         private static IntPtr _ptrFieldDisplayedCharIndex;
         private static IntPtr _ptrBattleFlag;
+        private static IntPtr _ptrWorldMapStartMenuFlag;
         private static IntPtr _ptrStartMenuItemMenuFlag;
         private static IntPtr _ptrStartMenuOptionCursorPosition;
         private static IntPtr _ptrStartMenuMagicTargetCursorPosition;
@@ -195,6 +186,7 @@ namespace FF4Bot
             _ptrChar3BattleMP = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x4EB8F8, 0x242CC);
             _ptrFieldDisplayedCharIndex = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x6440);
             _ptrBattleFlag = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x2E);
+            _ptrWorldMapStartMenuFlag = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0xFF52);
             _ptrStartMenuItemMenuFlag = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E3A0, 0x59FE);
             _ptrStartMenuOptionCursorPosition = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x22C6A);
             _ptrStartMenuMagicTargetCursorPosition = GetAdress(_process, _ptrGameMainModuleBaseAddress + 0x41E380, 0x300A0);
@@ -481,6 +473,7 @@ namespace FF4Bot
         }
 
         #region Unsorted Methods
+
         private static void QuicksaveGame()
         {
             InputSimulator.SimulateKeyDown(VirtualKeyCode.LSHIFT);
@@ -558,6 +551,7 @@ namespace FF4Bot
                 MainLoop();
             }
         }
+
         #endregion
 
         #region Reading RAM
@@ -585,6 +579,11 @@ namespace FF4Bot
         private static int ReadBattleFlag()
         {
             return Read(_process, _ptrBattleFlag, 1);
+        }
+
+        private static int ReadWorldMapStartMenuFlag()
+        {
+            return Read(_process, _ptrWorldMapStartMenuFlag, 1);
         }
 
         private static int ReadStartMenuItemMenuFlag()
@@ -670,6 +669,21 @@ namespace FF4Bot
             return iBattleFlag == 255;
         }
 
+        private static bool WorldMapStartMenuFlagSet()
+        {
+            return ReadWorldMapStartMenuFlag() != 0;
+        }
+
+        private static bool StartMenuFlagSet()
+        {
+            return WorldMapStartMenuFlagSet();
+        }
+
+        private static bool InMenu()
+        {
+            return StartMenuFlagSet();
+        }
+
         private static bool StartMenuItemMenuFlagSet()
         {
             return ReadStartMenuItemMenuFlag() == 255;
@@ -712,11 +726,6 @@ namespace FF4Bot
         #endregion
 
         #region CoordChecks
-
-        private static bool InMenu()
-        {
-            return SpritesheetSpriteIsInScreenAtPosition(SpritesheetSprite.StartMenu, 160, 166);
-        }
 
         private static bool InMenuMagicSelectedChoosingCharacter()
         {
